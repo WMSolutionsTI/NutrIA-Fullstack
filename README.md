@@ -2,8 +2,181 @@
 
 # 🥗 NutrIA-Pro Platform
 
-### Plataforma SaaS completa para nutricionistas
-Automatize a comunicação, gerencie consultas e fidelize seus clientes — tudo em um só lugar.
+### Plataforma SaaS para nutricionistas — automação, gestão, atendimento e fidelização em um só lugar.
+
+---
+
+## 📋 Índice
+
+- [Sobre o Projeto](#sobre-o-projeto)
+- [Funcionalidades Principais](#funcionalidades-principais)
+- [Arquitetura Geral](#arquitetura-geral)
+- [Stack Tecnológico](#stack-tecnológico)
+- [Estrutura do Repositório](#estrutura-do-repositório)
+- [Roadmap](#roadmap)
+- [Configuração e Uso](#configuração-e-uso)
+- [Segurança e Escalabilidade](#segurança-e-escalabilidade)
+- [Contribuindo](#contribuindo)
+- [Licença](#licença)
+
+---
+
+## 🎯 Sobre o Projeto
+
+O **NutrIA-Pro** é uma plataforma SaaS multi-tenant para nutricionistas e clínicas, centralizando comunicação, automação de atendimento, agendamento, cobranças, envio de planos alimentares, acompanhamento pós-consulta e gestão de clientes. O sistema foi redesenhado para suportar milhares de profissionais simultaneamente, com foco em automação inteligente via workers Python, escalabilidade, segurança e experiência profissional.
+
+### Problema Resolvido
+
+Nutricionistas enfrentam desafios ao gerenciar manualmente:
+- Mensagens em múltiplos canais (WhatsApp, Instagram, e-mail)
+- Agendamento e confirmação de consultas
+- Envio de planos alimentares e materiais
+- Follow-ups pós-consulta
+- Cobranças e lembretes
+
+O NutrIA-Pro automatiza todo esse fluxo, permitindo foco total no cuidado ao cliente.
+
+### Visão Geral do Fluxo
+
+```
+Cliente → WhatsApp/Telegram/Instagram/E-mail
+              ↓
+          [Chatwoot] (hub de comunicação)
+              ↓ webhook
+          [API FastAPI] (recebe e publica na fila)
+              ↓
+          [RabbitMQ] (fila de mensagens)
+              ↓
+          [Workers Python] (processam assincronamente)
+              ↓
+     ┌────────────────────────────┐
+     │  Banco de Dados (PostgreSQL)│
+     │  Arquivos (MinIO)          │
+     │  Cache (Redis)             │
+     └────────────────────────────┘
+              ↓
+     [Dashboard Next.js] ← Nutricionista visualiza tudo
+```
+
+---
+
+## ✨ Funcionalidades Principais
+
+### Para o Nutricionista (tenant)
+
+| Funcionalidade | Descrição |
+|---|---|
+| 📨 Central de Mensagens | Todas as conversas em um só lugar |
+| 📅 Agendamento | Calendário integrado, confirmações automáticas |
+| 🤖 Automações Inteligentes | Fluxos automáticos de boas-vindas, lembretes, follow-ups |
+| 👥 CRM de Clientes | Histórico completo, anotações clínicas, arquivos |
+| 📁 Gestão de Arquivos | Envio de planos alimentares, PDFs, materiais |
+| 📣 Campanhas | Mensagens segmentadas para grupos |
+| 💳 Cobranças | Links de pagamento (PIX, cartão), status |
+| 📊 Relatórios | Métricas de atendimento, engajamento, financeiro |
+
+### Para a Plataforma (admin)
+
+| Funcionalidade | Descrição |
+|---|---|
+| 🏢 Gestão de Tenants | Ativação, suspensão, alteração de planos |
+| 📦 Planos e Limites | Configuração de assinaturas, limites |
+| 🔍 Monitoramento | Dashboards de métricas, saúde das filas |
+| ⚡ DLQ Monitor | Reprocessamento de mensagens falhadas |
+
+---
+
+## 🏛️ Arquitetura Geral
+
+1. **Hub de Comunicação Centralizado (Chatwoot):** Todos os canais conectados ao Chatwoot, cada nutricionista com sua Inbox (identificador de tenant).
+2. **Processamento Assíncrono por Filas (RabbitMQ):** Webhooks publicados em filas, workers independentes processam eventos, garantindo respostas instantâneas e escalabilidade.
+3. **Automação via Workers Python:** Workers executam automações, interagem com API interna, Chatwoot, banco de dados, arquivos e integrações externas.
+4. **Multi-Tenancy por Isolamento de Dados:** Cada tenant isolado por `tenant_id` em todas as tabelas, enforcement na aplicação e testes automatizados.
+
+---
+
+## 🛠️ Stack Tecnológico
+
+| Componente | Tecnologia | Função |
+|---|---|---|
+| Backend API | FastAPI (Python) | API REST, webhooks, lógica de negócio |
+| Workers | Python | Automação, processamento de filas |
+| Banco de Dados | PostgreSQL | Armazenamento principal |
+| Fila de Mensagens | RabbitMQ | Broker, DLQ, roteamento |
+| Cache | Redis | Sessões, rate limiting, locks |
+| Arquivos | MinIO | Objetos S3 |
+| Hub de Comunicação | Chatwoot | Centralização de canais |
+| Frontend | Next.js 14+ | Dashboard e painel admin |
+| Containerização | Docker | Orquestração |
+| Proxy/Túnel | Cloudflared | TLS, DDoS protection |
+| Hospedagem | VPS Contabo | Produção |
+| Migrations | Alembic | Versionamento do schema |
+
+---
+
+## 📁 Estrutura do Repositório
+
+```
+backend_python/        # FastAPI, workers, migrations
+frontend/              # Next.js dashboard
+_infra/                # Docker, nginx, cloudflared
+_docs/                 # Documentação, ADRs, roadmap
+_projects/             # YAMLs de fases, scripts
+_scripts/              # Scripts de deploy, setup
+Makefile, README.md, etc.
+```
+
+---
+
+## 🗺️ Roadmap
+
+1. Inicialização e estruturação do projeto
+2. Infraestrutura e ambiente
+3. Backend core (API, workers)
+4. Multi-tenancy e isolamento
+5. Mensageria e integração Chatwoot
+6. Automação via workers Python
+7. Funcionalidades de negócio (anamnese, plano alimentar, acompanhamento IA)
+8. Frontend Next.js
+9. Observabilidade e monitoramento
+10. Segurança
+11. DevOps e CI/CD
+12. Lançamento
+13. Escalabilidade
+14. IA nutricional avançada
+
+---
+
+## ⚙️ Configuração e Uso
+
+1. Clone o repositório
+2. Configure variáveis de ambiente (ver `_docs/environment-variables.md`)
+3. Use Docker Compose ou Swarm para subir todos os serviços
+4. Acesse o painel pelo endereço local
+5. Para desenvolvimento, use scripts em `_scripts/` e Makefile
+
+---
+
+## 🔒 Segurança e Escalabilidade
+
+- Isolamento total de tenants por `tenant_id` (ver ADR-007)
+- Middleware de validação, testes de isolamento, code review obrigatório
+- Webhooks verificados, rate limiting, autenticação JWT
+- Escalabilidade horizontal: workers e filas independentes
+- Observabilidade: logs, métricas, health checks
+- Backup e restore manual por tenant
+
+---
+
+## 🤝 Contribuindo
+
+Veja o guia em `CONTRIBUTING.md`. PRs devem seguir checklist de isolamento, testes, documentação e boas práticas.
+
+---
+
+## 📄 Licença
+
+Projeto privado, uso restrito.
 
 ---
 
