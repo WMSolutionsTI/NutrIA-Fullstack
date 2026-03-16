@@ -1,0 +1,342 @@
+# fase-05-workers-filas.yaml
+# Fase 5 — Sistema de Workers e Arquitetura de Filas
+# Milestone: M5 — Sistema de Workers Operacional
+
+owner: WMSolutionsTI
+repo: NutriSaas
+
+project:
+  name: "Fase 05 — Sistema de Workers e Arquitetura de Filas (RabbitMQ)"
+
+labels:
+  - name: workers
+    color: "#FF6600"
+    description: "Workers RabbitMQ e processamento assíncrono"
+  - name: queue
+    color: "#f97316"
+    description: "Arquitetura de filas, exchanges e roteamento"
+  - name: reliability
+    color: "#6366f1"
+    description: "Retry, DLQ, idempotência e resiliência"
+  - name: scalability
+    color: "#0ea5e9"
+    description: "Escalonamento horizontal e estratégias de escala"
+  - name: feature
+    color: "#22c55e"
+    description: "Nova funcionalidade"
+  - name: ai-agent
+    color: "#8b5cf6"
+    description: "Agente de IA secretária virtual e controle de automação"
+  - name: chatwoot
+    color: "#1F93FF"
+    description: "Integração com Chatwoot API e webhooks"
+  - name: anamnesis
+    color: "#7c3aed"
+    description: "Entrevista de anamnese pré-consulta com IA"
+  - name: meal-plan
+    color: "#059669"
+    description: "Geração e envio de plano alimentar"
+  - name: followup
+    color: "#0891b2"
+    description: "Acompanhamento diário pós-consulta"
+  - name: files
+    color: "#059669"
+    description: "Gestão de arquivos e geração de PDF"
+
+milestones:
+  - title: "M5 — Sistema de Workers Operacional"
+    due_date: "2026-05-30"
+    description: "Workers com retry, DLQ, idempotência e escalonamento horizontal documentado"
+
+issues:
+  - title: "Definir e declarar topologia completa de exchanges e filas"
+    body: |
+      Implementar todas as exchanges, filas, bindings e configurações de dead-letter no RabbitMQ.
+      Referência: Roadmap Fase 5, seção 5.1
+    tasks:
+      - "Criar exchange chatwoot.events (topic)"
+      - "Criar exchange automation.triggers (topic)"
+      - "Criar exchange notifications.outbound (direct)"
+      - "Criar exchange scheduler.tasks (topic)"
+      - "Criar exchange billing.events (direct)"
+      - "Criar exchange deadletter (direct)"
+      - "Criar exchange ai.clinical (topic) para eventos do pipeline clínico"
+      - "Criar fila message.processor com DLX e TTL configurados"
+      - "Criar fila conversation.processor com DLX"
+      - "Criar fila automation.executor com DLX"
+      - "Criar fila notification.sender com DLX"
+      - "Criar fila scheduler.executor com DLX"
+      - "Criar fila billing.processor com DLX"
+      - "Criar fila deadletter.queue"
+      - "Criar fila anamnesis.conductor com DLX — conduz entrevista de anamnese"
+      - "Criar fila meal_plan.generator com DLX — gera plano alimentar com IA"
+      - "Criar fila meal_plan.pdf com DLX — renderiza e envia PDF do plano"
+      - "Criar fila followup.daily com DLX — acompanhamento diário pós-consulta"
+      - "Configurar prefetch_count inicial de 10 por worker"
+    labels:
+      - queue
+    milestone: "M5 — Sistema de Workers Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Criar serviço base de workers com BaseConsumer"
+    body: |
+      Scaffoldar o serviço de workers e implementar a classe abstrata BaseConsumer com conexão, retry e graceful shutdown.
+      Referência: Roadmap Fase 5, seção 5.2
+    tasks:
+      - "Criar estrutura de diretórios do serviço workers"
+      - "Implementar BaseConsumer: conexão RabbitMQ, declarações idempotentes"
+      - "Implementar loop de consumo com error handling"
+      - "ACK em sucesso, NACK sem requeue em erro de negócio → DLQ"
+      - "NACK com requeue + delay em erro transiente → retry"
+      - "Implementar estratégia de retry: 3 tentativas com backoff 2s/4s/8s via headers"
+      - "Implementar padrão de idempotência: checar/gravar worker:processed:{message_id} no Redis (TTL 48h)"
+      - "Implementar graceful shutdown: capturar SIGTERM, finalizar mensagem em andamento, fechar conexões"
+      - "Criar Dockerfile para o serviço workers"
+    labels:
+      - workers
+      - reliability
+    milestone: "M5 — Sistema de Workers Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar MessageProcessorConsumer"
+    body: |
+      Worker que consome mensagens de message.processor e executa o pipeline completo de processamento.
+      Referência: Roadmap Fase 5, seção 5.3
+    tasks:
+      - "Validar payload com schema Pydantic"
+      - "Resolver tenant por inbox_id"
+      - "Checar status do tenant e limites de uso"
+      - "Upsert de registro de cliente"
+      - "Gravar mensagem no banco de dados"
+      - "Atualizar last_message_at na conversa"
+      - "Publicar evento de automação se regra for acionada"
+      - "Incrementar contador messages_received no UsageTrackingService"
+      - "Implementar download de anexos e upload para MinIO"
+    labels:
+      - workers
+    milestone: "M5 — Sistema de Workers Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar NotificationSenderConsumer"
+    body: |
+      Worker que envia mensagens de saída para clientes via API do Chatwoot.
+      Referência: Roadmap Fase 5, seção 5.4
+    tasks:
+      - "Consumir fila notification.sender"
+      - "Chamar ChatwootAPIClient.send_message() com retry em rate limiting (429)"
+      - "Gravar mensagem outbound no banco de dados"
+      - "Incrementar contador messages_sent no UsageTrackingService"
+      - "Redirecionar falhas para DLQ com detalhes do erro"
+    labels:
+      - workers
+    milestone: "M5 — Sistema de Workers Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar sistema de tarefas agendadas (SchedulerWorker)"
+    body: |
+      Construir o sistema de agendamento de tarefas futuras com tabela, polling e worker executor.
+      Referência: Roadmap Fase 5, seção 5.5
+    tasks:
+      - "Criar model e migration da tabela scheduled_tasks"
+      - "Suportar task_types: send_reminder, follow_up_message, appointment_reminder, reactivation_campaign"
+      - "Implementar background task de polling a cada 60 segundos"
+      - "Publicar tarefas vencidas na fila scheduler.tasks"
+      - "Atualizar status da task para queued ao publicar (evitar duplo-envio)"
+      - "Implementar SchedulerExecutorConsumer"
+      - "Despachar task para handler correto por task_type"
+      - "Atualizar status da task para executed ou failed"
+    labels:
+      - workers
+    milestone: "M5 — Sistema de Workers Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar Dead Letter Queue (DLQ) handler e painel admin"
+    body: |
+      Monitor de DLQ com armazenamento, alertas e funcionalidade de replay.
+      Referência: Roadmap Fase 5, seção 5.6
+    tasks:
+      - "Implementar consumer da deadletter.queue"
+      - "Logar detalhes completos: fila de origem, razão do erro, tenant_id, payload"
+      - "Gravar registro na tabela dead_letter_events para revisão admin"
+      - "Disparar alerta no sistema de monitoramento para alto volume de DLQ"
+      - "Implementar POST /admin/dlq/{id}/replay"
+      - "Implementar GET /admin/dlq com filtros por tenant e fila"
+    labels:
+      - workers
+      - reliability
+    milestone: "M5 — Sistema de Workers Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Documentar e validar estratégia de escalonamento horizontal de workers"
+    body: |
+      Documentar o processo de escalonamento, runbook e triggers para adicionar réplicas de workers.
+      Referência: Roadmap Fase 5, seção 5.7
+    tasks:
+      - "Documentar comando de escalonamento: docker compose up --scale"
+      - "Definir triggers de escalonamento por profundidade de fila"
+      - "Validar que múltiplas réplicas não causam duplicidade (testar idempotência)"
+      - "Documentar configuração dos Dockerfiles como stateless"
+      - "Documentar caminho de migração para Docker Swarm ou Kubernetes"
+    labels:
+      - scalability
+    milestone: "M5 — Sistema de Workers Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[WORKER] Worker de Escalação Humana"
+    body: |
+      Worker dedicado que consome fila `queue.human_escalation`:
+
+      Responsabilidades:
+      1. Receber evento de escalação da IA
+      2. Desabilitar flag `ai_agent_enabled` para o contato
+      3. Enviar mensagem WhatsApp para o nutricionista com:
+         - Nome do cliente
+         - Resumo das últimas mensagens
+         - Link direto para a conversa no painel Chatwoot
+      4. Publicar notificação no painel do nutricionista
+      5. Aguardar evento de resolução (webhook ou API call)
+      6. Reativar `ai_agent_enabled` e enviar mensagem de retomada ao cliente
+
+      Fluxo baseado no workflow `05. Escalar humano.json`.
+    labels:
+      - workers
+      - feature
+      - ai-agent
+      - chatwoot
+    milestone: "M5 — Sistema de Workers Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[WORKER] Worker de Retomada do Agente de IA"
+    body: |
+      Consome fila `queue.ai_resume`:
+      - Reativa `ai_agent_enabled = true` para a conversa
+      - Envia mensagem configurável ao cliente ("Olá! Estou de volta para te ajudar 😊")
+      - Registra log de intervenção humana com timestamps
+      - Notifica o nutricionista da retomada no painel
+    labels:
+      - workers
+      - feature
+      - ai-agent
+    milestone: "M5 — Sistema de Workers Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[WORKER] Worker Condutor de Anamnese (AnamnesisWorker)"
+    body: |
+      Worker responsável por conduzir a entrevista pré-consulta via IA pelo Chatwoot.
+      Consome fila `anamnesis.conductor`.
+      Quando disparado (trigger: appointment criado e confirmado), inicia sequência de perguntas de anamnese.
+      Suporta respostas em texto E em áudio (transcreve com Whisper/OpenAI antes de processar).
+      Mantém estado da entrevista no Redis e ao concluir salva prontuário completo no banco.
+    tasks:
+      - "Criar model e migration da tabela `medical_records` (prontuário completo — append-only por sessão)"
+      - "Criar model e migration da tabela `anamnesis_sessions` (estado da entrevista: pending, in_progress, completed)"
+      - "Implementar AnamnesisWorker: consome `anamnesis.conductor`"
+      - "Implementar AnamnesisStateManager: persiste estado da conversa no Redis com TTL 48h"
+      - "Implementar AnamnesisAIService: chama OpenAI GPT-4o com prompt de nutricionista especialista"
+      - "Implementar transcrição de áudio: se mensagem for audio, chamar Whisper API antes de processar"
+      - "Implementar lógica de progressão: após cada resposta, determinar próxima pergunta ou encerramento"
+      - "Ao concluir, chamar MedicalRecordService.save_anamnesis(appointment_id, collected_data)"
+      - "Implementar POST /internal/anamnesis/start (chamado pelo scheduler ao confirmar consulta)"
+      - "Implementar GET /medical-records/{client_id} (para a nutricionista visualizar antes/durante consulta)"
+      - "Implementar POST /medical-records/{client_id}/notes (nutricionista adiciona observações durante consulta)"
+      - "Escrever testes unitários para AnamnesisStateManager e progressão de perguntas"
+    labels:
+      - workers
+      - feature
+      - ai-agent
+      - chatwoot
+    milestone: "M5 — Sistema de Workers Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[WORKER] Worker Gerador de Plano Alimentar (MealPlanGeneratorWorker)"
+    body: |
+      Worker que usa IA para gerar plano alimentar completo após a consulta ser concluída.
+      Consome fila `meal_plan.generator`.
+      Disparado quando consulta muda para status `completed`.
+      Busca prontuário completo do paciente e chama agente de IA com prompt de nutricionista especialista em elaboração de plano alimentar.
+      Salva plano no banco com status `draft` aguardando aprovação da nutricionista.
+    tasks:
+      - "Criar model e migration da tabela `meal_plans` (plano, versão, status: draft/approved/sent)"
+      - "Criar model e migration da tabela `meal_plan_items` (refeições, alimentos, quantidades)"
+      - "Implementar MealPlanGeneratorWorker: consome `meal_plan.generator`"
+      - "Implementar MealPlanAIService: monta prompt completo com todo o prontuário e chama GPT-4o"
+      - "Definir schema JSON de output do plano alimentar (estrutura padronizada)"
+      - "Implementar MealPlanRepository: salva plano com status draft"
+      - "Implementar GET /meal-plans/{id} (nutricionista visualiza o plano gerado)"
+      - "Implementar PUT /meal-plans/{id} (nutricionista edita itens do plano)"
+      - "Implementar POST /meal-plans/{id}/approve (muda status para approved, dispara envio de PDF)"
+      - "Implementar POST /meal-plans/{id}/regenerate (gera nova versão do plano via IA)"
+      - "Implementar GET /clients/{client_id}/meal-plans (histórico de planos do paciente)"
+      - "Escrever teste: dado um prontuário mockado, o serviço gera um plano com estrutura válida"
+    labels:
+      - workers
+      - feature
+      - ai-agent
+    milestone: "M5 — Sistema de Workers Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[WORKER] Worker Gerador e Enviador de PDF do Plano Alimentar (MealPlanPDFWorker)"
+    body: |
+      Worker que converte o plano aprovado em PDF formatado e envia ao paciente via Chatwoot.
+      Consome fila `meal_plan.pdf`.
+      Disparado quando plano muda para status `approved`.
+      Gera PDF usando WeasyPrint com template HTML/CSS profissional, faz upload para MinIO e envia via Chatwoot como attachment.
+    tasks:
+      - "Instalar e configurar WeasyPrint no Dockerfile do serviço workers"
+      - "Criar template HTML/CSS profissional para o plano alimentar (Jinja2)"
+      - "Implementar MealPlanPDFWorker: consome `meal_plan.pdf`"
+      - "Implementar PDFGeneratorService: renderiza HTML com Jinja2 e converte para PDF com WeasyPrint"
+      - "Implementar upload do PDF para MinIO em `tenant-files/{tenant_id}/meal-plans/{uuid}.pdf`"
+      - "Chamar ChatwootAPIClient.send_file_message() com o PDF como attachment"
+      - "Enviar mensagem de texto de acompanhamento do envio"
+      - "Atualizar status do meal_plan para sent no banco de dados"
+      - "Implementar GET /meal-plans/{id}/download para nutricionista baixar o PDF gerado"
+      - "Escrever teste: dado um meal_plan mockado, o PDF é gerado sem erro e tem tamanho > 0"
+    labels:
+      - workers
+      - feature
+      - files
+    milestone: "M5 — Sistema de Workers Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[WORKER] Worker de Acompanhamento Diário Pós-Consulta (DailyFollowupWorker)"
+    body: |
+      Agente de IA de acompanhamento diário que apoia o paciente na execução do plano alimentar.
+      Consome fila `followup.daily`.
+      Ativado automaticamente quando o plano alimentar é enviado (status = sent).
+      Cria tarefas agendadas diárias para o período de acompanhamento (configurável, padrão 30 dias).
+      Todas as respostas do paciente são registradas na tabela `followup_logs` e ficam visíveis para a nutricionista.
+      Se paciente relatar dificuldade ou sintoma, escala para a nutricionista.
+    tasks:
+      - "Criar model e migration da tabela `followup_schedules` (período de acompanhamento por paciente)"
+      - "Criar model e migration da tabela `followup_logs` (registro de todas as interações diárias)"
+      - "Implementar DailyFollowupWorker: consome `followup.daily`"
+      - "Implementar FollowupSchedulerService: ao aprovar plano, cria N scheduled_tasks para os próximos 30 dias"
+      - "Implementar FollowupAIService: gera mensagem personalizada com base no contexto do paciente e dia do acompanhamento"
+      - "Implementar lógica de check-in: após mensagem do dia, aguardar resposta e registrar em followup_logs"
+      - "Implementar detecção de dificuldade: se resposta contiver palavras-chave de problema, escalar para nutricionista"
+      - "Implementar GET /clients/{id}/followup-logs (nutricionista visualiza progresso do paciente)"
+      - "Implementar PUT /followup-schedules/{id}/pause e /resume (nutricionista pausa/retoma acompanhamento)"
+      - "Implementar POST /followup-schedules/{id}/extend (nutricionista estende período de acompanhamento)"
+      - "Adicionar task_type `daily_followup` na tabela scheduled_tasks"
+      - "Escrever testes: geração de mensagem de bom dia, lembrete de refeição e registro de resposta"
+    labels:
+      - workers
+      - feature
+      - ai-agent
+      - chatwoot
+    milestone: "M5 — Sistema de Workers Operacional"
+    assignees:
+      - WMSolutionsTI

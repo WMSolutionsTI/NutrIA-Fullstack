@@ -1,0 +1,57 @@
+# =============================================================================
+# NutrIA-Pro — API — Dependências de Produção
+# =============================================================================
+# Instale com: pip install -r requirements.txt
+# Para desenvolvimento, instale também: pip install -r requirements-dev.txt
+# =============================================================================
+
+# Web framework assíncrono
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# ORM e banco de dados
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.29.0
+alembic==1.14.0
+
+# Validação de dados
+pydantic==2.10.3
+pydantic-settings==2.7.0
+
+# Cache e sessões
+redis==5.2.0
+
+# Message broker
+aio-pika==9.4.3
+
+# Autenticação JWT
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Upload de arquivos
+python-multipart==0.0.22
+
+# Cliente HTTP (para integrar Chatwoot, n8n, Evolution API)
+httpx==0.28.1
+
+# Storage S3/MinIO
+boto3==1.35.90
+
+# Utilitários
+python-dateutil==2.9.0
+
+# IA e processamento assíncrono
+openai==1.0.0
+celery==5.3.6
+
+# Servidor de produção
+gunicorn==21.2.0
+
+# Gerenciamento de ambiente
+python-dotenv==1.0.1
+
+# Logging estruturado (opcional)
+loguru==0.7.2
+
+# IA
+openai

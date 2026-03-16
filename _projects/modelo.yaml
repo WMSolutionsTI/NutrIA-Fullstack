@@ -1,0 +1,64 @@
+# issues.yaml
+# Arquivo de configuração em YAML para o script de gerenciamento de projetos no GitHub.
+# Este arquivo define o owner, repo, projeto, labels, milestones e issues com suas tasks, assignees, etc.
+
+owner: WMSolutionsTI
+repo: CriadorDeProjetosGithub
+
+project:
+  name: Projeto Exemplo
+
+labels:
+  - name: bug
+    color: "#d73a4a"
+    description: "Algo nao esta se comportando como esperado"
+  - name: enhancement
+    color: "#a2eeef"
+    description: "Nova funcionalidade ou pedido"
+  - name: documentation
+    color: "#0075ca"
+    description: "Melhorias ou adicoes a documentacao"
+
+milestones:
+  - title: Versao 1.0
+    due_date: "2026-12-31"
+    description: "Lancamento inicial da aplicacao"
+  - title: Versao 1.1
+    due_date: "2027-03-31"
+    description: "Atualizacoes e correcoes"
+
+issues:
+  - title: Implementar autenticacao de usuario
+    body: "Descricao inicial: Adicionar sistema de login e registro."
+    tasks:
+      - "Configurar banco de dados para usuarios"
+      - "Implementar endpoint de login"
+      - "Adicionar validacao de tokens"
+    labels:
+      - enhancement
+    milestone: Versao 1.0
+    assignees:
+      - WMSolutionsTI
+
+  - title: Corrigir bug na interface
+    body: "Descricao inicial: O botao de submit nao responde em mobile."
+    tasks:
+      - "Testar em diferentes dispositivos"
+      - "Ajustar CSS responsivo"
+    labels:
+      - bug
+    milestone: Versao 1.0
+    assignees:
+      - WMSolutionsTI
+
+  - title: Atualizar documentacao
+    body: "Descricao inicial: Documentar as novas APIs."
+    tasks:
+      - "Escrever README atualizado"
+      - "Adicionar exemplos de uso"
+      - "Criar diagrama de arquitetura"
+    labels:
+      - documentation
+    milestone: Versao 1.1
+    assignees:
+      - WMSolutionsTI

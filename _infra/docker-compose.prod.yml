@@ -1,0 +1,602 @@
+  worker_rabbitmq:
+    image: ghcr.io/wmsolutionsti/nutria-pro-api:latest
+    command: python app/workers/rabbitmq_worker.py
+    environment:
+      - DATABASE_URL=postgresql://nutria_app:senha@postgres:5432/nutria
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - backend
+      - rabbitmq
+    networks:
+      - messaging_net
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  worker_lembretes:
+    image: ghcr.io/wmsolutionsti/nutria-pro-api:latest
+    command: python app/workers/agente_lembretes_agendamento_worker.py
+    environment:
+      - DATABASE_URL=postgresql://nutria_app:senha@postgres:5432/nutria
+    depends_on:
+      - backend
+      - rabbitmq
+    networks:
+      - messaging_net
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+
+  worker_leads:
+    image: ghcr.io/wmsolutionsti/nutria-pro-api:latest
+    command: python app/workers/recuperacao_leads_worker.py
+    environment:
+      - DATABASE_URL=postgresql://nutria_app:senha@postgres:5432/nutria
+    depends_on:
+      - backend
+      - rabbitmq
+    networks:
+      - messaging_net
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+
+  worker_retell_secretaria:
+    image: ghcr.io/wmsolutionsti/nutria-pro-api:latest
+    command: python app/workers/retell_secretaria_v3_worker.py
+    environment:
+      - DATABASE_URL=postgresql://nutria_app:senha@postgres:5432/nutria
+    depends_on:
+      - backend
+      - rabbitmq
+    networks:
+      - messaging_net
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+
+  worker_utilitarios:
+    image: ghcr.io/wmsolutionsti/nutria-pro-api:latest
+    command: python -m app.workers  # __init__.py importa redis_worker, minio_worker, configuracoes_worker
+    environment:
+      - DATABASE_URL=postgresql://nutria_app:senha@postgres:5432/nutria
+      - REDIS_HOST=redis
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=nutria-files
+    depends_on:
+      - backend
+      - redis
+      - minio
+    networks:
+      - backend_net
+      - storage_net
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+
+  worker_gestao_ligacoes:
+    image: ghcr.io/wmsolutionsti/nutria-pro-api:latest
+    command: python app/workers/gestao_ligacoes_worker.py
+    environment:
+      - DATABASE_URL=postgresql://nutria_app:senha@postgres:5432/nutria
+    depends_on:
+      - backend
+      - rabbitmq
+    networks:
+      - messaging_net
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+
+  worker_plano_pdf:
+    image: ghcr.io/wmsolutionsti/nutria-pro-api:latest
+    command: python app/workers/plano_pdf_worker.py
+    environment:
+      - DATABASE_URL=postgresql://nutria_app:senha@postgres:5432/nutria
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=nutria-files
+    depends_on:
+      - backend
+      - minio
+    networks:
+      - storage_net
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+# =============================================================================
+# NutrIA-Pro — Docker Compose para Produção (VPS Contabo)
+# =============================================================================
+# Deploy: docker compose -f docker-compose.prod.yml up -d
+#
+# Segurança: ZERO portas expostas ao público.
+# Todo o tráfego externo chega via Cloudflare Tunnel (cloudflared).
+# Único acesso externo permitido: SSH na porta 22 (UFW).
+#
+# Arquitetura:
+#   Internet → Cloudflare Edge → Cloudflare Tunnel → cloudflared → rede interna
+#
+# DNS:
+#   api.nutria-pro.com    → http://api:8000      (via Tunnel)
+#   chat.nutria-pro.com   → http://chatwoot-web:3000 (via Tunnel)
+#   n8n.nutria-pro.com    → http://n8n:5678      (via Tunnel + CF Access)
+#   minio.nutria-pro.com  → http://minio:9001    (via Tunnel + CF Access)
+#   rabbit.nutria-pro.com → http://rabbitmq:15672 (via Tunnel + CF Access)
+# =============================================================================
+
+version: '3.8'
+
+services:
+  backend:
+    image: ghcr.io/wmsolutionsti/nutria-pro-api:latest
+    command: gunicorn app.main:app --workers=4 --bind=0.0.0.0:8000 --timeout 120
+    environment:
+      - DATABASE_URL=postgresql://nutria_app:senha@postgres:5432/nutria
+      - REDIS_URL=redis://:senha@redis:6379/0
+      - RABBITMQ_URL=amqp://admin:senha@rabbitmq:5672/nutria
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - backend_net
+      - messaging_net
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  worker_secretaria:
+    image: ghcr.io/wmsolutionsti/nutria-pro-api:latest
+    command: python app/workers/secretaria_v3_worker.py
+    environment:
+      - DATABASE_URL=postgresql://nutria_app:senha@postgres:5432/nutria
+      - REDIS_URL=redis://:senha@redis:6379/0
+      - RABBITMQ_URL=amqp://admin:senha@rabbitmq:5672/nutria
+    depends_on:
+      - backend
+      - rabbitmq
+    networks:
+      - messaging_net
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  worker_asaas:
+    image: ghcr.io/wmsolutionsti/nutria-pro-api:latest
+    command: python app/workers/asaas_worker.py
+    environment:
+      - DATABASE_URL=postgresql://nutria_app:senha@postgres:5432/nutria
+      - REDIS_URL=redis://:senha@redis:6379/0
+      - RABBITMQ_URL=amqp://admin:senha@rabbitmq:5672/nutria
+    depends_on:
+      - backend
+      - rabbitmq
+    networks:
+      - messaging_net
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  worker_interno:
+    image: ghcr.io/wmsolutionsti/nutria-pro-api:latest
+    command: python app/workers/assistente_interno_worker.py
+    environment:
+      - DATABASE_URL=postgresql://nutria_app:senha@postgres:5432/nutria
+      - REDIS_URL=redis://:senha@redis:6379/0
+      - RABBITMQ_URL=amqp://admin:senha@rabbitmq:5672/nutria
+    depends_on:
+      - backend
+      - rabbitmq
+    networks:
+      - messaging_net
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nutria_app
+      POSTGRES_PASSWORD: senha
+      POSTGRES_DB: nutria
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend_net
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass senha
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: senha
+      RABBITMQ_DEFAULT_VHOST: nutria
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - messaging_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  minio:
+    image: minio/minio
+    command: server /data
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio_data:/data
+    networks:
+      - storage_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ../backend_python/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - frontend_net
+      - backend_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+
+networks:
+  backend_net:
+    driver: bridge
+  messaging_net:
+    driver: bridge
+  storage_net:
+    driver: bridge
+  frontend_net:
+    driver: bridge
+    env_file:
+      - .env.prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - saas-internal
+    healthcheck:
+      test: ["CMD", "python", "-c", "import app.main"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # 🐘 POSTGRES — Banco de dados principal
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: nutria-pro-postgres
+    restart: unless-stopped
+    # SEM ports: — sem exposição ao host
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - saas-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # ---------------------------------------------------------------------------
+  # 🔴 REDIS — Cache e sessões
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: nutria-pro-redis
+    restart: unless-stopped
+    # SEM ports:
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - saas-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # 🐇 RABBITMQ — Fila de mensagens
+  # ---------------------------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: nutria-pro-rabbitmq
+    restart: unless-stopped
+    # SEM ports: — management panel via Cloudflare Tunnel apenas
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: nutria-pro
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - saas-internal
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # 🪣 MINIO — Armazenamento de arquivos
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: nutria-pro-minio
+    restart: unless-stopped
+    # SEM ports:
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - saas-internal
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # 🤖 N8N — Motor de automação
+  # Protegido por Cloudflare Access (autenticação obrigatória)
+  # ---------------------------------------------------------------------------
+
+  # ---------------------------------------------------------------------------
+  # 💬 CHATWOOT — Hub de comunicação
+  # ---------------------------------------------------------------------------
+  chatwoot-postgres:
+    image: postgres:16-alpine
+    container_name: nutria-pro-chatwoot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${CHATWOOT_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${CHATWOOT_POSTGRES_PASSWORD}
+      POSTGRES_DB: chatwoot_production
+    volumes:
+      - chatwoot_postgres_data:/var/lib/postgresql/data
+    networks:
+      - chatwoot-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CHATWOOT_POSTGRES_USER} -d chatwoot_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  chatwoot-redis:
+    image: redis:7-alpine
+    container_name: nutria-pro-chatwoot-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${CHATWOOT_REDIS_PASSWORD}
+    volumes:
+      - chatwoot_redis_data:/data
+    networks:
+      - chatwoot-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${CHATWOOT_REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  chatwoot-web:
+    image: chatwoot/chatwoot:latest
+    container_name: nutria-pro-chatwoot-web
+    restart: unless-stopped
+    # SEM ports: — acesso via Cloudflare Tunnel
+    environment:
+      RAILS_ENV: production
+      SECRET_KEY_BASE: ${CHATWOOT_SECRET_KEY_BASE}
+      DATABASE_URL: postgres://${CHATWOOT_POSTGRES_USER}:${CHATWOOT_POSTGRES_PASSWORD}@chatwoot-postgres:5432/chatwoot_production
+      REDIS_URL: redis://:${CHATWOOT_REDIS_PASSWORD}@chatwoot-redis:6379
+      FRONTEND_URL: https://chat.nutria-pro.com
+      DEFAULT_LOCALE: pt_BR
+    command: bundle exec rails s -p 3000 -b 0.0.0.0
+    volumes:
+      - chatwoot_storage:/app/storage
+    depends_on:
+      chatwoot-postgres:
+        condition: service_healthy
+      chatwoot-redis:
+        condition: service_healthy
+    networks:
+      - saas-internal
+      - chatwoot-internal
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/auth/sign_in"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+
+  chatwoot-worker:
+    image: chatwoot/chatwoot:latest
+    container_name: nutria-pro-chatwoot-worker
+    restart: unless-stopped
+    environment:
+      RAILS_ENV: production
+      SECRET_KEY_BASE: ${CHATWOOT_SECRET_KEY_BASE}
+      DATABASE_URL: postgres://${CHATWOOT_POSTGRES_USER}:${CHATWOOT_POSTGRES_PASSWORD}@chatwoot-postgres:5432/chatwoot_production
+      REDIS_URL: redis://:${CHATWOOT_REDIS_PASSWORD}@chatwoot-redis:6379
+      FRONTEND_URL: https://chat.nutria-pro.com
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    volumes:
+      - chatwoot_storage:/app/storage
+    depends_on:
+      chatwoot-postgres:
+        condition: service_healthy
+      chatwoot-redis:
+        condition: service_healthy
+    networks:
+      - chatwoot-internal
+
+# =============================================================================
+# VOLUMES PERSISTENTES
+# =============================================================================
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+  n8n_data:
+  chatwoot_postgres_data:
+  chatwoot_redis_data:
+  chatwoot_storage:
+
+# =============================================================================
+# REDES — Completamente internas, sem exposição ao host
+# =============================================================================
+networks:
+  saas-internal:
+    driver: bridge
+  chatwoot-internal:
+    driver: bridge
+    internal: true   # Totalmente isolada — chatwoot postgres/redis não saem

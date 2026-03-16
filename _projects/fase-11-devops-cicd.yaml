@@ -1,0 +1,138 @@
+# fase-11-devops-cicd.yaml
+# Fase 11 — DevOps, CI/CD e Estratégia de Deploy
+# Milestone: M11 — Pipeline de CI/CD no Ar
+
+owner: WMSolutionsTI
+repo: NutriSaas
+
+project:
+  name: "Fase 11 — DevOps, CI/CD e Estratégia de Deploy"
+
+labels:
+  - name: devops
+    color: "#0891b2"
+    description: "DevOps, pipelines e automação de deploy"
+  - name: ci-cd
+    color: "#0369a1"
+    description: "Integração e entrega contínua"
+  - name: deployment
+    color: "#1d4ed8"
+    description: "Estratégias e práticas de deploy"
+  - name: backup
+    color: "#15803d"
+    description: "Backup e estratégias de recuperação"
+
+milestones:
+  - title: "M11 — Pipeline de CI/CD no Ar"
+    due_date: "2026-08-12"
+    description: "Build, test e deploy automatizados com rollback e staging funcionando"
+
+issues:
+  - title: "Configurar registry de containers"
+    body: |
+      Configurar GitHub Container Registry com convenção de tags e política de retenção de imagens.
+      Referência: Roadmap Fase 11, seção 11.1
+    tasks:
+      - "Configurar GitHub Container Registry (ghcr.io)"
+      - "Definir convenção de nomes: nutrisaas-api, nutrisaas-worker, nutrisaas-frontend"
+      - "Definir tags: latest (staging), v{semver} (produção), sha-{git_sha} (todos os builds)"
+      - "Configurar política de retenção: manter últimas 10 versões"
+    labels:
+      - devops
+      - ci-cd
+    milestone: "M11 — Pipeline de CI/CD no Ar"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar pipeline de CI com GitHub Actions"
+    body: |
+      Criar workflow de CI completo com lint, testes, segurança e build de imagens.
+      Referência: Roadmap Fase 11, seção 11.2
+    tasks:
+      - "Criar job lint-and-type-check: ruff, mypy, eslint"
+      - "Criar job unit-tests: pytest com PostgreSQL e Redis como services, cobertura mínima 80%"
+      - "Criar job integration-tests: Docker Compose completo, testes contra serviços reais"
+      - "Criar job security-scan: pip-audit, npm audit, trivy em imagens"
+      - "Criar job build-images: build e push para ghcr.io com sha-{git_sha} (apenas em push para develop/main)"
+      - "Configurar trigger em todos os PRs e pushes para develop/main"
+    labels:
+      - ci-cd
+    milestone: "M11 — Pipeline de CI/CD no Ar"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar pipeline de CD (deploy automatizado)"
+    body: |
+      Criar workflows de deploy para staging (automático) e produção (com aprovação manual e rollback).
+      Referência: Roadmap Fase 11, seção 11.3
+    tasks:
+      - "Deploy automático para staging em push para develop"
+      - "SSH no VPS de staging, pull das imagens, docker compose up -d, run migrations, smoke tests"
+      - "Notificar Slack no sucesso/falha do deploy de staging"
+      - "Deploy para produção em push de tag v*.*.* ou trigger manual"
+      - "Exigir aprovação manual via GitHub Actions environment protection"
+      - "Run migrations antes do novo código"
+      - "Health check automático após deploy"
+      - "Rollback automático se health check falhar (re-deploy da versão anterior)"
+      - "Implementar estratégia de deploy zero-downtime"
+    labels:
+      - ci-cd
+      - deployment
+    milestone: "M11 — Pipeline de CI/CD no Ar"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Definir e documentar política de migrations no deploy"
+    body: |
+      Garantir que todas as migrations são backward compatible e documentar o processo de dois-stages para mudanças destrutivas.
+      Referência: Roadmap Fase 11, seção 11.4
+    tasks:
+      - "Documentar política: migrations sempre antes do novo código"
+      - "Documentar regra: todas as migrations devem ser backward compatible (aditivas)"
+      - "Documentar padrão de dois-stages para breaking changes"
+      - "Exigir review de migration em tabelas com milhões de linhas"
+      - "Exigir uso de CREATE INDEX CONCURRENTLY"
+    labels:
+      - devops
+      - deployment
+    milestone: "M11 — Pipeline de CI/CD no Ar"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Provisionar e configurar ambiente de staging"
+    body: |
+      Configurar servidor de staging idêntico ao de produção com dados de teste e Cloudflare Tunnel dedicado.
+      Referência: Roadmap Fase 11, seção 11.5
+    tasks:
+      - "Provisionar VPS de staging (Contabo ou equivalente menor)"
+      - "Configurar Docker Compose idêntico ao de produção"
+      - "Configurar Cloudflare Tunnel separado: staging.dominio.com"
+      - "Provisionar instância Chatwoot de staging (separada)"
+      - "Seed do banco de staging com dados anonimizados de teste"
+      - "Documentar usos do ambiente de staging: validação, QA, carga, webhook"
+    labels:
+      - devops
+      - deployment
+    milestone: "M11 — Pipeline de CI/CD no Ar"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar estratégia completa de backup"
+    body: |
+      Configurar backups automatizados e testados para banco, MinIO, workflows n8n e definições RabbitMQ.
+      Referência: Roadmap Fase 11, seção 11.6
+    tasks:
+      - "Configurar job cron de pg_dump diário em container dedicado"
+      - "Criptografar backups com GPG antes de armazenar"
+      - "Upload para MinIO bucket db-backups com prefixo de data"
+      - "Retenção: 30 backups diários, 12 backups mensais"
+      - "Documentar e executar drill mensal de restore no staging"
+      - "Configurar replicação MinIO para storage secundário (Backblaze B2 ou Wasabi)"
+      - "Export diário de workflows n8n via API para MinIO"
+      - "Export diário de definições RabbitMQ via management API para MinIO"
+    labels:
+      - backup
+      - devops
+    milestone: "M11 — Pipeline de CI/CD no Ar"
+    assignees:
+      - WMSolutionsTI

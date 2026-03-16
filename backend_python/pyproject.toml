@@ -1,0 +1,131 @@
+# ============================================================
+# NutrIA-Pro — services/api/pyproject.toml
+# Configuração central de ferramentas Python
+# ============================================================
+
+[tool.ruff]
+# Versão mínima do Python alvo
+target-version = "py312"
+
+# Tamanho máximo de linha (mesmo do black)
+line-length = 88
+
+# Diretórios a ignorar
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "alembic/versions/",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+# Regras ativas:
+# E = erros de estilo (pycodestyle)
+# F = erros lógicos (pyflakes)
+# I = ordenação de imports (isort)
+# N = convenções de nomenclatura (pep8-naming)
+# UP = sugestões de modernização (pyupgrade)
+# B = bugs comuns (flake8-bugbear)
+# S = segurança básica (flake8-bandit)
+# ANN = type annotations obrigatórias
+select = ["E", "F", "I", "N", "UP", "B", "S", "ANN"]
+
+# Regras ignoradas (com justificativa)
+ignore = [
+    "ANN101", # Não exigir anotação de tipo em 'self'
+    "ANN102", # Não exigir anotação de tipo em 'cls'
+    "S101",   # Permitir uso de 'assert' em testes
+    "B008",   # Permitir chamadas de função em default args (padrão FastAPI)
+]
+
+# Regras que podem ser corrigidas automaticamente
+fixable = ["ALL"]
+
+[tool.ruff.lint.per-file-ignores]
+# Em arquivos de teste, relaxar algumas regras
+"tests/**/*.py" = ["S101", "ANN", "N802"]
+# No arquivo de migrations do alembic, ignorar tudo
+"alembic/**/*.py" = ["ALL"]
+
+[tool.ruff.lint.isort]
+# Organização de imports: stdlib → third-party → local
+known-first-party = ["app"]
+force-sort-within-sections = true
+
+# ============================================================
+# BLACK — Formatador de código
+# ============================================================
+[tool.black]
+target-version = ["py312"]
+line-length = 88
+# Strings em aspas duplas (padrão black)
+skip-string-normalization = false
+# Arquivos a ignorar
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | __pycache__
+  | alembic/versions
+  | build
+  | dist
+)/
+'''
+
+# ============================================================
+# MYPY — Verificador de tipos estáticos
+# ============================================================
+[tool.mypy]
+python_version = "3.12"
+
+# Rigor de verificação
+strict = false           # não usar strict total (muito restritivo no início)
+disallow_untyped_defs = true      # funções precisam ter type hints
+disallow_incomplete_defs = true   # type hints precisam ser completos
+check_untyped_defs = true         # verifica funções sem anotação também
+no_implicit_optional = true       # força Optional[X] explícito
+warn_return_any = true            # avisa quando retorno é 'Any'
+warn_unused_ignores = true        # avisa sobre '# type: ignore' desnecessários
+warn_unreachable = true           # avisa sobre código inacessível
+
+# Diretório raiz da aplicação
+mypy_path = "."
+
+# Módulos sem stubs de tipo (ignorar erros de import)
+[[tool.mypy.overrides]]
+module = [
+    "aio_pika.*",
+    "alembic.*",
+    "chatwoot.*",
+]
+ignore_missing_imports = true
+
+# ============================================================
+# PYTEST — Configuração de testes
+# ============================================================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+# Mostrar prints durante testes com -s
+addopts = "-v --tb=short"
+
+# ============================================================
+# COVERAGE — Cobertura de testes
+# ============================================================
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "tests/*",
+    "alembic/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+# Falhar se cobertura cair abaixo de 80%
+fail_under = 80
+show_missing = true

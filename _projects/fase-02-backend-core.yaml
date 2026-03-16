@@ -1,0 +1,190 @@
+# fase-02-backend-core.yaml
+# Fase 2 — Desenvolvimento do Core da API Backend
+# Milestone: M2 — API Core Operacional
+
+owner: WMSolutionsTI
+repo: NutriSaas
+
+project:
+  name: "Fase 02 — Core da API Backend (FastAPI)"
+
+labels:
+  - name: backend
+    color: "#009688"
+    description: "Desenvolvimento do backend FastAPI"
+  - name: database
+    color: "#336791"
+    description: "Models, migrations e acesso a dados"
+  - name: authentication
+    color: "#e11d48"
+    description: "Autenticação, autorização e segurança de acesso"
+  - name: testing
+    color: "#22c55e"
+    description: "Testes unitários e de integração"
+  - name: observability
+    color: "#f59e0b"
+    description: "Logs, métricas e health checks"
+  - name: database-routing
+    color: "#0369a1"
+    description: "Roteamento de queries read/write"
+
+milestones:
+  - title: "M2 — API Core Operacional"
+    due_date: "2026-04-18"
+    description: "FastAPI com auth, DB, error handling, tenant context e testes base funcionando"
+
+issues:
+  - title: "Estruturar projeto FastAPI"
+    body: |
+      Criar a estrutura de diretórios e arquivos base da aplicação FastAPI com configurações iniciais.
+      Referência: Roadmap Fase 2, seção 2.1
+    tasks:
+      - "Criar estrutura de pastas: models/, schemas/, routers/, services/, repositories/, workers/, integrations/, middleware/, utils/"
+      - "Configurar main.py como entry point da aplicação"
+      - "Configurar pydantic-settings para carregamento tipado de variáveis de ambiente"
+      - "Configurar logging estruturado JSON com structlog ou python-json-logger"
+      - "Incluir request_id, tenant_id e user_id em todos os log entries"
+      - "Criar Dockerfile para o serviço api"
+      - "Criar requirements.txt com todas as dependências"
+    labels:
+      - backend
+    milestone: "M2 — API Core Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Configurar camada de banco de dados (SQLAlchemy + Alembic)"
+    body: |
+      Configurar engine assíncrona do SQLAlchemy com asyncpg, base model com campos comuns e Alembic para migrations.
+      Referência: Roadmap Fase 2, seção 2.2
+    tasks:
+      - "Configurar SQLAlchemy async engine com asyncpg"
+      - "Configurar connection pool: pool_size, timeout, recycle, overflow via env vars"
+      - "Criar base model com campos id (UUID), created_at, updated_at, tenant_id"
+      - "Inicializar Alembic com modo async e auto-import de todos os models"
+      - "Documentar workflow de criação e aplicação de migrations"
+      - "Criar classe base do repository com get_by_id, list, create, update, soft_delete sempre escopados por tenant_id"
+      - "Implementar dependency de sessão de banco assíncrona com auto-commit/rollback"
+    labels:
+      - backend
+      - database
+    milestone: "M2 — API Core Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar sistema de autenticação e autorização (JWT + RBAC)"
+    body: |
+      Construir o sistema completo de autenticação com JWT RS256, refresh token rotation e RBAC.
+      Referência: Roadmap Fase 2, seção 2.3
+    tasks:
+      - "Implementar JWT com algoritmo RS256 (chaves assimétricas)"
+      - "Access token: 15 minutos de duração"
+      - "Refresh token: 30 dias, armazenado em DB para revogação"
+      - "Payload do token: user_id, tenant_id, role, plan_tier, exp"
+      - "Implementar POST /auth/login"
+      - "Implementar POST /auth/refresh com rotação de token"
+      - "Implementar POST /auth/logout (revoga refresh token)"
+      - "Implementar POST /auth/forgot-password"
+      - "Implementar POST /auth/reset-password"
+      - "Implementar POST /auth/verify-email"
+      - "Implementar hashing de senha com Argon2 (argon2-cffi)"
+      - "Definir roles: platform_admin, nutritionist_owner, nutritionist_staff, readonly"
+      - "Criar dependency get_current_tenant_user() para endpoints protegidos"
+    labels:
+      - backend
+      - authentication
+    milestone: "M2 — API Core Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar TenantContextMiddleware"
+    body: |
+      Middleware que extrai tenant_id do JWT e disponibiliza via ContextVar para toda a requisição, com cache de status do tenant no Redis.
+      Referência: Roadmap Fase 2, seção 2.4
+    tasks:
+      - "Implementar TenantContextMiddleware extraindo tenant_id do JWT"
+      - "Armazenar tenant_id em ContextVar thread-safe"
+      - "Implementar escopo automático de tenant no repository base"
+      - "Validar status do tenant (active, suspended, trial_expired) em toda requisição"
+      - "Cachear status do tenant no Redis com TTL de 60 segundos"
+      - "Retornar 403 descritivo para tenants inativos"
+    labels:
+      - backend
+      - authentication
+    milestone: "M2 — API Core Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar health checks, versionamento e request ID"
+    body: |
+      Criar endpoints de health, configurar versionamento /v1/ e middleware de request ID.
+      Referência: Roadmap Fase 2, seção 2.5
+    tasks:
+      - "Implementar GET /health (liveness check)"
+      - "Implementar GET /health/ready (readiness: verifica PostgreSQL, Redis, RabbitMQ)"
+      - "Prefixar todas as rotas com /v1/"
+      - "Implementar middleware de request ID: gerar UUID e incluir em header X-Request-ID e nos logs"
+      - "Configurar OpenAPI/Swagger com endpoints, schemas e erros documentados"
+    labels:
+      - backend
+      - observability
+    milestone: "M2 — API Core Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar tratamento global de erros"
+    body: |
+      Criar schema padrão de erro e handlers globais para todos os tipos de exceção.
+      Referência: Roadmap Fase 2, seção 2.6
+    tasks:
+      - "Definir schema padrão de resposta de erro (code, message, details, request_id)"
+      - "Handler para ValidationError → 422"
+      - "Handler para AuthenticationError → 401"
+      - "Handler para AuthorizationError → 403"
+      - "Handler para NotFoundError → 404"
+      - "Handler para TenantSuspendedError → 403"
+      - "Handler para PlanLimitExceededError → 429"
+      - "Handler genérico para exceções não tratadas → 500 sem stack trace exposto"
+      - "Garantir log completo de todas as exceções com request_id, tenant_id, user_id"
+    labels:
+      - backend
+    milestone: "M2 — API Core Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Criar fundação de testes automatizados"
+    body: |
+      Configurar pytest assíncrono com fixtures de banco isolado, factories de tenant/usuário e mocks de serviços externos.
+      Referência: Roadmap Fase 2, seção 2.7
+    tasks:
+      - "Configurar pytest com suporte assíncrono (pytest-asyncio)"
+      - "Criar conftest.py com fixture de banco de teste isolado"
+      - "Criar factory de tenant de teste"
+      - "Criar factory de usuário com geração de JWT"
+      - "Criar mock do publisher RabbitMQ"
+      - "Criar mock do cliente Chatwoot API"
+      - "Configurar pytest-cov com threshold mínimo de 80%"
+      - "Escrever testes unitários: auth service, tenant scoping, repository base"
+    labels:
+      - testing
+    milestone: "M2 — API Core Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar roteamento read/write para PostgreSQL com read replica"
+    body: |
+      Criar infraestrutura de sessões separadas para leitura e escrita no SQLAlchemy, roteando automaticamente cada tipo de operação para o banco correto.
+      Referência: Roadmap Fase 2, seção de roteamento de banco de dados
+    tasks:
+      - "Criar duas engines SQLAlchemy: write_engine (aponta para DATABASE_URL/PgBouncer) e read_engine (aponta para DATABASE_READ_URL)"
+      - "Criar duas sessions: get_write_db() e get_read_db() como FastAPI dependencies"
+      - "Documentar regra: toda rota GET usa get_read_db(), toda rota POST/PUT/PATCH/DELETE usa get_write_db()"
+      - "Implementar fallback: se DATABASE_READ_URL não estiver configurada, get_read_db() retorna a write session (para desenvolvimento local)"
+      - "Escrever teste que valida que uma query de leitura vai para a read engine e escrita para a write engine"
+      - "Documentar no README como adicionar get_read_db a um novo endpoint"
+    labels:
+      - backend
+      - database
+      - database-routing
+    milestone: "M2 — API Core Operacional"
+    assignees:
+      - WMSolutionsTI

@@ -1,0 +1,124 @@
+# fase-09-observabilidade.yaml
+# Fase 9 — Observabilidade, Monitoramento e Alertas
+# Milestone: M9 — Observabilidade Operacional
+
+owner: WMSolutionsTI
+repo: NutriSaas
+
+project:
+  name: "Fase 09 — Observabilidade, Monitoramento e Alertas"
+
+labels:
+  - name: observability
+    color: "#f59e0b"
+    description: "Logging, métricas e rastreamento"
+  - name: monitoring
+    color: "#0ea5e9"
+    description: "Prometheus, Grafana e alertas"
+  - name: logging
+    color: "#10b981"
+    description: "Logs estruturados e agregação"
+  - name: alerting
+    color: "#ef4444"
+    description: "Alertas e notificações de incidentes"
+
+milestones:
+  - title: "M9 — Observabilidade Operacional"
+    due_date: "2026-07-29"
+    description: "Logging estruturado, métricas, dashboards Grafana e alertas configurados"
+
+issues:
+  - title: "Padronizar logging estruturado em todos os serviços"
+    body: |
+      Implementar logging JSON em API e workers, definir níveis e centralizar com Loki + Grafana.
+      Referência: Roadmap Fase 9, seção 9.1
+    tasks:
+      - "Padronizar JSON logging em todos os serviços (structlog ou python-json-logger)"
+      - "Incluir em todos os logs: timestamp, level, service, request_id, tenant_id, event"
+      - "Definir e documentar uso de cada nível: DEBUG, INFO, WARNING, ERROR, CRITICAL"
+      - "Deploy de Loki para agregação de logs"
+      - "Deploy e configurar Promtail para shipar logs dos containers Docker para Loki"
+      - "Criar datasource Loki no Grafana"
+      - "Criar dashboard de exploração de logs no Grafana"
+    labels:
+      - logging
+      - observability
+    milestone: "M9 — Observabilidade Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar coleta de métricas com Prometheus"
+    body: |
+      Instrumentar todos os serviços com Prometheus e criar exporters para RabbitMQ, PostgreSQL e sistema.
+      Referência: Roadmap Fase 9, seção 9.2
+    tasks:
+      - "Deploy de Prometheus"
+      - "Instrumentar FastAPI com prometheus-fastapi-instrumentator (request rate, latência, error rate)"
+      - "Implementar métricas de negócio: messages_processed_total, automation_executions_total, etc."
+      - "Deploy RabbitMQ Prometheus exporter"
+      - "Deploy postgres_exporter para métricas PostgreSQL"
+      - "Deploy Node exporter para métricas de hardware do VPS (CPU, RAM, disco, rede)"
+    labels:
+      - monitoring
+      - observability
+    milestone: "M9 — Observabilidade Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Criar dashboards Grafana"
+    body: |
+      Construir todos os dashboards de monitoramento no Grafana cobrindo sistema, API, filas, workers e negócio.
+      Referência: Roadmap Fase 9, seção 9.2.7
+    tasks:
+      - "Dashboard: Visão Geral do Sistema (CPU, RAM, disco, rede do VPS)"
+      - "Dashboard: Performance da API (request rate, latência p50/p95/p99, error rate)"
+      - "Dashboard: Saúde das Filas (profundidade, consumers, volume DLQ)"
+      - "Dashboard: Performance dos Workers (throughput, tempo de processamento, erros)"
+      - "Dashboard: Métricas de Negócio (mensagens/hora, tenants ativos, automações)"
+      - "Dashboard: Uso por Tenant (volume de mensagens, limites atingidos)"
+    labels:
+      - monitoring
+      - observability
+    milestone: "M9 — Observabilidade Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Configurar alertas no Prometheus Alertmanager"
+    body: |
+      Definir e ativar todas as regras de alerta com notificação via Slack e e-mail.
+      Referência: Roadmap Fase 9, seção 9.3
+    tasks:
+      - "Deploy de Alertmanager"
+      - "Regra: API error rate > 5% por 2 min → CRÍTICO"
+      - "Regra: profundidade de fila > 1000 por 5 min → WARNING"
+      - "Regra: DLQ depth > 50 → WARNING"
+      - "Regra: consumer count = 0 em qualquer fila → CRÍTICO"
+      - "Regra: PostgreSQL connections > 90% do max → WARNING"
+      - "Regra: disco > 80% → WARNING"
+      - "Regra: API p99 latency > 2000ms por 5 min → WARNING"
+      - "Configurar canal Slack webhook (ops channel)"
+      - "Configurar canal de e-mail para engenheiro on-call"
+      - "Testar disparo e recebimento de cada alerta"
+    labels:
+      - alerting
+      - monitoring
+    milestone: "M9 — Observabilidade Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Configurar monitoramento de uptime externo"
+    body: |
+      Configurar UptimeRobot ou Betterstack para monitorar endpoints críticos da plataforma.
+      Referência: Roadmap Fase 9, seção 9.4
+    tasks:
+      - "Monitorar https://api.dominio.com/health/ready a cada 1 minuto"
+      - "Monitorar https://app.dominio.com a cada 1 minuto"
+      - "Monitorar https://chat.dominio.com a cada 5 minutos"
+      - "Configurar alertas de downtime via e-mail e Slack"
+      - "Criar dashboard interno de status de todos os serviços no Grafana"
+    labels:
+      - monitoring
+      - alerting
+    milestone: "M9 — Observabilidade Operacional"
+    assignees:
+      - WMSolutionsTI

@@ -1,0 +1,185 @@
+# fase-08-frontend.yaml
+# Fase 8 — Frontend Dashboards (Next.js)
+# Milestone: M8 — Frontend Operacional
+
+owner: WMSolutionsTI
+repo: NutriSaas
+
+project:
+  name: "Fase 08 — Frontend Dashboards (Next.js)"
+
+labels:
+  - name: frontend
+    color: "#000000"
+    description: "Desenvolvimento frontend Next.js"
+  - name: ui
+    color: "#ec4899"
+    description: "Componentes de interface e UX"
+  - name: authentication
+    color: "#e11d48"
+    description: "Fluxos de autenticação e sessão"
+  - name: performance
+    color: "#16a34a"
+    description: "Performance e otimização do frontend"
+
+milestones:
+  - title: "M8 — Frontend Operacional"
+    due_date: "2026-07-22"
+    description: "Dashboards Next.js do nutricionista e painel admin funcionando"
+
+issues:
+  - title: "Setup e configuração do projeto Next.js"
+    body: |
+      Inicializar projeto Next.js com App Router, TypeScript, TailwindCSS, shadcn/ui e camadas de estado e API.
+      Referência: Roadmap Fase 8, seção 8.1
+    tasks:
+      - "Inicializar Next.js 14+ com App Router"
+      - "Configurar TypeScript em modo strict"
+      - "Instalar e configurar TailwindCSS"
+      - "Instalar e configurar shadcn/ui como biblioteca de componentes"
+      - "Configurar cliente de API (axios/ky) com interceptors: JWT injection, refresh em 401, X-Request-ID"
+      - "Configurar TanStack Query (React Query) para server state"
+      - "Configurar Zustand para client state"
+      - "Configurar i18n para suporte a Português e Inglês"
+      - "Criar Dockerfile para o serviço frontend"
+    labels:
+      - frontend
+    milestone: "M8 — Frontend Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar fluxos de autenticação no frontend"
+    body: |
+      Telas de login, cadastro, verificação de e-mail, senha, e gestão segura de sessão com tokens.
+      Referência: Roadmap Fase 8, seção 8.2
+    tasks:
+      - "Implementar página de login com formulário e-mail/senha"
+      - "Implementar fluxo de registro multi-step (5 etapas)"
+      - "Implementar página de esqueci minha senha"
+      - "Implementar página de redefinição de senha"
+      - "Implementar gestão de sessão: access token em memória, refresh token em HttpOnly cookie"
+      - "Implementar silent token refresh com React Query background refetch"
+    labels:
+      - frontend
+      - authentication
+    milestone: "M8 — Frontend Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar Dashboard Home e Central de Conversas"
+    body: |
+      Tela inicial com resumo do dia e tela de conversas com listagem e link para Chatwoot.
+      Referência: Roadmap Fase 8, seção 8.3.1 e 8.3.2
+    tasks:
+      - "Implementar /dashboard: consultas do dia, mensagens não lidas, atividade recente, métricas"
+      - "Implementar /conversations: listagem com busca, filtros e preview da última mensagem"
+      - "Indicadores de status de conversa (aberta, pendente, resolvida)"
+      - "Deep link para abrir conversa no Chatwoot"
+    labels:
+      - frontend
+      - ui
+    milestone: "M8 — Frontend Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar telas de Clientes e Perfil do Cliente"
+    body: |
+      Lista paginada de clientes e perfil completo com histórico, notas, arquivos e tags.
+      Referência: Roadmap Fase 8, seções 8.3.3 e 8.3.4
+    tasks:
+      - "Implementar /clients: lista paginada com busca, filtro por tag/status/data"
+      - "Quick actions na lista: enviar mensagem, agendar consulta, ver perfil"
+      - "Implementar /clients/{id}: informações de contato, histórico completo"
+      - "Seção de conversas do cliente"
+      - "Seção de consultas do cliente"
+      - "Seção de notas clínicas com adição inline"
+      - "Seção de arquivos do cliente"
+      - "Gestão de tags inline"
+      - "Timeline de atividades do cliente"
+    labels:
+      - frontend
+      - ui
+    milestone: "M8 — Frontend Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar telas de Consultas e Calendário"
+    body: |
+      Calendário interativo com visualizações mensal e semanal e modal de agendamento.
+      Referência: Roadmap Fase 8, seção 8.3.5
+    tasks:
+      - "Implementar /appointments: visualização de calendário mensal e semanal"
+      - "Modal de agendamento de nova consulta"
+      - "Clique em consulta: detalhes, confirmar, concluir, cancelar"
+      - "Configuração de tipos de consulta"
+    labels:
+      - frontend
+      - ui
+    milestone: "M8 — Frontend Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar telas de Arquivos, Automações e Campanhas"
+    body: |
+      Telas de gestão de arquivos, configuração de automações e gerenciamento de campanhas.
+      Referência: Roadmap Fase 8, seções 8.3.6, 8.3.7 e 8.3.8
+    tasks:
+      - "Implementar /files: upload, organização por categoria, botão enviar para cliente"
+      - "Implementar /automations: lista de templates, toggle habilitar/desabilitar, configuração de parâmetros, logs de execução"
+      - "Implementar /campaigns: criar, gerenciar, preview de audiência, lançar, estatísticas"
+    labels:
+      - frontend
+      - ui
+    milestone: "M8 — Frontend Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar tela de Configurações do tenant"
+    body: |
+      Tela de configurações com perfil, horário, equipe, faturamento e tokens de API.
+      Referência: Roadmap Fase 8, seção 8.3.9
+    tasks:
+      - "Perfil da clínica: nome, timezone, horário de funcionamento"
+      - "Preferências de notificação"
+      - "Gestão de equipe: convidar e gerenciar staff"
+      - "Faturamento e assinatura: plano atual, invoices, portal de pagamento"
+      - "Tokens de API para usuários avançados"
+      - "Conexão de canais (link para configuração de inbox no Chatwoot)"
+    labels:
+      - frontend
+      - ui
+    milestone: "M8 — Frontend Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar painel admin da plataforma"
+    body: |
+      Telas do painel administrativo para gestão de tenants, DLQ e métricas de uso.
+      Referência: Roadmap Fase 8, seção 8.4
+    tasks:
+      - "Implementar /admin: dashboard com métricas globais da plataforma"
+      - "Implementar /admin/tenants: lista com status, plano e uso; ações de suspend/activate/change-plan"
+      - "Implementar /admin/dlq: listagem e replay de mensagens na DLQ"
+      - "Implementar /admin/usage: breakdown de uso por tenant com alertas de limite"
+    labels:
+      - frontend
+      - ui
+    milestone: "M8 — Frontend Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Otimizar performance do frontend"
+    body: |
+      Aplicar estratégias de performance: otimistic updates, virtual scrolling, caching e Core Web Vitals.
+      Referência: Roadmap Fase 8, seção 8.5
+    tasks:
+      - "Implementar optimistic UI updates para mutations (mark as read, update status)"
+      - "Implementar paginação e virtual scrolling em listas grandes"
+      - "Configurar estratégias de caching Next.js: force-cache para páginas estáticas, no-store para dashboard"
+      - "Configurar monitoramento de Core Web Vitals"
+    labels:
+      - frontend
+      - performance
+    milestone: "M8 — Frontend Operacional"
+    assignees:
+      - WMSolutionsTI

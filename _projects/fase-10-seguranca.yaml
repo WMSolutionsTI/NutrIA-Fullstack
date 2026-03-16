@@ -1,0 +1,134 @@
+# fase-10-seguranca.yaml
+# Fase 10 — Hardening de Segurança
+# Milestone: M10 — Auditoria de Segurança Aprovada
+
+owner: WMSolutionsTI
+repo: NutriSaas
+
+project:
+  name: "Fase 10 — Hardening de Segurança"
+
+labels:
+  - name: security
+    color: "#e11d48"
+    description: "Segurança, hardening e proteção"
+  - name: authentication
+    color: "#dc2626"
+    description: "Segurança de autenticação e sessão"
+  - name: api-security
+    color: "#b91c1c"
+    description: "Rate limiting, headers e CORS"
+  - name: secrets
+    color: "#991b1b"
+    description: "Gestão de secrets e credenciais"
+  - name: dependencies
+    color: "#7f1d1d"
+    description: "Vulnerabilidades em dependências"
+
+milestones:
+  - title: "M10 — Auditoria de Segurança Aprovada"
+    due_date: "2026-08-05"
+    description: "Auditoria interna OWASP Top 10 concluída, todos os itens críticos resolvidos"
+
+issues:
+  - title: "Implementar segurança de API (rate limiting, headers, CORS, tamanho de request)"
+    body: |
+      Aplicar rate limiting, headers de segurança HTTP, CORS restrito e limites de tamanho de payload.
+      Referência: Roadmap Fase 10, seç��o 10.1
+    tasks:
+      - "Implementar rate limiter baseado em Redis (sliding window)"
+      - "Rate limit endpoints de auth: 10 req/min por IP"
+      - "Rate limit API geral: 100 req/min por tenant"
+      - "Rate limit webhook: 1000 req/min"
+      - "Retornar 429 com header Retry-After"
+      - "Configurar limite de tamanho de request: 10MB"
+      - "Configurar limite de upload: 50MB (configurável por plano)"
+      - "Configurar headers de segurança via Nginx: HSTS, X-Content-Type-Options, X-Frame-Options, CSP, Referrer-Policy"
+      - "Configurar CORS: permitir apenas domínio do frontend em produção"
+    labels:
+      - api-security
+      - security
+    milestone: "M10 — Auditoria de Segurança Aprovada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Hardening de autenticação"
+    body: |
+      Implementar bloqueio de conta, rotação de tokens e 2FA opcional.
+      Referência: Roadmap Fase 10, seção 10.2
+    tasks:
+      - "Implementar lockout após 5 tentativas falhas de login (bloqueio 10 min no Redis)"
+      - "Implementar rotação de JWT refresh token a cada uso"
+      - "Logar todos os eventos de autenticação: login, logout, tentativa falha, reset de senha (com IP e user-agent)"
+      - "Implementar 2FA opcional via TOTP (authenticator app)"
+    labels:
+      - authentication
+      - security
+    milestone: "M10 — Auditoria de Segurança Aprovada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Auditoria e testes de isolamento de tenant"
+    body: |
+      Revisar todas as queries, implementar testes automatizados de isolamento e verificar paths MinIO.
+      Referência: Roadmap Fase 10, seção 10.3
+    tasks:
+      - "Revisar todas as queries do banco: toda query deve incluir tenant_id no WHERE"
+      - "Implementar análise automatizada de queries em testes para verificar ausência de cross-tenant access"
+      - "Escrever testes de integração: tenant A tentando acessar dados de tenant B deve receber 404"
+      - "Verificar que todos os caminhos de arquivo no MinIO incluem tenant_id como primeiro segmento"
+      - "Validar que geração de URL pré-assinada verifica ownership do tenant"
+    labels:
+      - security
+    milestone: "M10 — Auditoria de Segurança Aprovada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar gestão segura de secrets"
+    body: |
+      Auditar, criptografar e documentar rotação de todos os secrets críticos da plataforma.
+      Referência: Roadmap Fase 10, seção 10.4
+    tasks:
+      - "Auditar todas as variáveis de ambiente: nenhum secret em código ou imagens Docker"
+      - "Documentar procedimento de rotação para: JWT keys, DB passwords, RabbitMQ, MinIO, Chatwoot tokens, payment gateway keys"
+      - "Implementar criptografia AES-256-GCM para secrets de tenant no banco (ex: tokens Chatwoot)"
+      - "Armazenar chave de criptografia em variável de ambiente (não no banco)"
+      - "Habilitar SSL/TLS em todas as conexões com PostgreSQL"
+    labels:
+      - secrets
+      - security
+    milestone: "M10 — Auditoria de Segurança Aprovada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Garantir segurança de webhooks"
+    body: |
+      Verificar assinaturas, validar schemas, proteger contra replay e garantir processamento desacoplado.
+      Referência: Roadmap Fase 10, seção 10.5
+    tasks:
+      - "Verificar assinatura HMAC em todos os webhooks inbound (Chatwoot, gateway de pagamento)"
+      - "Validar schemas dos payloads de webhook com Pydantic antes de processar"
+      - "Confirmar que proteção contra replay está ativa (event_id no Redis)"
+      - "Confirmar que webhook receiver nunca chama serviços externos inline — sempre via fila"
+    labels:
+      - security
+    milestone: "M10 — Auditoria de Segurança Aprovada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Configurar varredura de vulnerabilidades em dependências"
+    body: |
+      Ativar scan automático de dependências no CI e configurar atualizações automáticas de segurança.
+      Referência: Roadmap Fase 10, seção 10.6
+    tasks:
+      - "Integrar pip-audit ou safety no pipeline de CI para Python"
+      - "Integrar npm audit no pipeline de CI para Node.js"
+      - "Integrar trivy para scan de vulnerabilidades nas imagens Docker"
+      - "Fixar todas as versões de dependências em produção (sem ranges)"
+      - "Configurar Dependabot ou Renovate para PRs automáticos de patches de segurança"
+    labels:
+      - dependencies
+      - security
+    milestone: "M10 — Auditoria de Segurança Aprovada"
+    assignees:
+      - WMSolutionsTI

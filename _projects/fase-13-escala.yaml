@@ -1,0 +1,174 @@
+# fase-13-escala.yaml
+# Fase 13 — Prontidão para Escala Antecipada
+# Milestone: M13 — Arquitetura Pronta para Escala
+
+owner: WMSolutionsTI
+repo: NutriSaas
+
+project:
+  name: "Fase 13 — Prontidão para Escala Antecipada"
+
+labels:
+  - name: scalability
+    color: "#0ea5e9"
+    description: "Escalonamento horizontal e estratégias de crescimento"
+  - name: infrastructure
+    color: "#0052cc"
+    description: "Infraestrutura multi-nó e migração"
+  - name: database
+    color: "#336791"
+    description: "Escalonamento de banco de dados"
+  - name: caching
+    color: "#16a34a"
+    description: "Estratégias de caching e Redis"
+  - name: performance
+    color: "#f59e0b"
+    description: "Otimizações de performance em escala"
+  - name: replication
+    color: "#0369a1"
+    description: "Replicação PostgreSQL e alta disponibilidade"
+  - name: connection-pooling
+    color: "#4f46e5"
+    description: "PgBouncer e gestão de pool de conexões"
+  - name: anti-lock
+    color: "#dc2626"
+    description: "Estratégias antitravamento e queries lentas"
+
+milestones:
+  - title: "M13 — Arquitetura Pronta para Escala"
+    due_date: "2026-10-01"
+    description: "Estratégias de escalonamento documentadas, testadas e prontas para ativação"
+
+issues:
+  - title: "Documentar e validar playbook de escalonamento horizontal de workers"
+    body: |
+      Criar runbook detalhado de escalonamento de workers, triggers e script de monitoramento automático.
+      Referência: Roadmap Fase 13, seção 13.1
+    tasks:
+      - "Documentar playbook de escalonamento: comando, triggers, verificação pós-scale"
+      - "Definir triggers precisos por profundidade de fila e duração"
+      - "Validar idempotência com múltiplas réplicas concorrentes (testes de stress)"
+      - "Implementar script de monitoramento de profundidade de fila com alerta Slack de recomendação de escalonamento"
+      - "Documentar path de migração para Swarm/Kubernetes"
+    labels:
+      - scalability
+    milestone: "M13 — Arquitetura Pronta para Escala"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Preparar caminho de escalonamento do PostgreSQL"
+    body: |
+      Documentar setup de read replica, implementar routing read/write e planejar particionamento de tabelas.
+      Referência: Roadmap Fase 13, seção 13.2
+    tasks:
+      - "Documentar processo de setup de read replica PostgreSQL com streaming replication"
+      - "Implementar routing read/write: DATABASE_URL para writes, DATABASE_READ_URL para reads"
+      - "Configurar via variável de ambiente (sem mudança de código)"
+      - "Documentar estratégia de particionamento para tabelas messages e workflow_execution_logs (>10M linhas)"
+      - "Adicionar serviço postgres-replica no docker-compose.prod.yml com configuração de streaming replication"
+      - "Configurar postgresql.conf no primário: wal_level=replica, max_wal_senders=3, wal_keep_size=64MB"
+      - "Criar usuário replicator com permissão REPLICATION no banco primário"
+      - "Configurar pg_hba.conf para permitir conexão do replica com autenticação scram-sha-256"
+      - "Validar replicação: inserir registro no primário, confirmar presença na réplica em < 1s"
+      - "Implementar roteamento no SQLAlchemy: write_engine aponta para primário, read_engine para réplica"
+      - "Criar script de teste de replicação automático que valida lag < 100ms"
+      - "Documentar procedimento de failover manual: promover réplica para primário em caso de falha"
+    labels:
+      - database
+      - scalability
+    milestone: "M13 — Arquitetura Pronta para Escala"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Documentar caminho de migração para infraestrutura multi-nó"
+    body: |
+      Criar guia step-by-step para evolução da infraestrutura de single VPS para multi-nó.
+      Referência: Roadmap Fase 13, seção 13.3
+    tasks:
+      - "Definir triggers de escalonamento: CPU > 80% ou RAM > 85% sustentados por 1 semana"
+      - "Documentar Step 1: adicionar segundo VPS só para workers"
+      - "Documentar Step 2: migrar PostgreSQL para servidor dedicado ou managed service"
+      - "Documentar Step 3: migrar RabbitMQ para CloudAMQP ou servidor dedicado"
+      - "Documentar Step 4: migrar MinIO para Backblaze B2 ou S3 managed"
+      - "Documentar Step 5: avaliar migração para Docker Swarm ou Kubernetes"
+      - "Verificar que todos os serviços usam apenas variáveis de ambiente para URLs (sem hardcode)"
+    labels:
+      - infrastructure
+      - scalability
+    milestone: "M13 — Arquitetura Pronta para Escala"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Maturar estratégia de caching"
+    body: |
+      Implementar caching de resposta para endpoints de alta leitura e monitorar cache hit rate.
+      Referência: Roadmap Fase 13, seção 13.4
+    tasks:
+      - "Implementar caching de GET /plans (TTL 1h)"
+      - "Implementar caching de GET /clients/{id} (TTL 30s, invalidar em update)"
+      - "Implementar caching de GET /appointments/availability (TTL 60s)"
+      - "Implementar invalidação baseada em tags para limpeza em massa"
+      - "Criar dashboard Grafana com cache hit rate"
+      - "Meta: > 60% de hit rate para endpoints cacheáveis"
+    labels:
+      - caching
+      - performance
+    milestone: "M13 — Arquitetura Pronta para Escala"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Planejar escalonamento do RabbitMQ e avaliar CloudAMQP"
+    body: |
+      Documentar processo de criação de cluster RabbitMQ e avaliar migração para serviço gerenciado.
+      Referência: Roadmap Fase 13, seção 13.5
+    tasks:
+      - "Documentar setup de cluster RabbitMQ com múltiplos nós"
+      - "Documentar migração de classic queues para quorum queues"
+      - "Avaliar CloudAMQP: custo vs. economia de tempo de engenharia"
+      - "Definir trigger para migração: quando RabbitMQ single node se tornar gargalo"
+    labels:
+      - infrastructure
+      - scalability
+    milestone: "M13 — Arquitetura Pronta para Escala"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Revisar rate limiting em escala com alta contagem de tenants"
+    body: |
+      Garantir que a solução de rate limiting baseada em Redis escale com o crescimento da base de tenants.
+      Referência: Roadmap Fase 13, seção 13.6
+    tasks:
+      - "Revisar implementação de rate limiting: verificar comportamento com 1000+ tenants simultâneos"
+      - "Avaliar sliding window vs. token bucket em termos de precisão e overhead"
+      - "Documentar ponto em que um serviço dedicado de rate limiting se torna necessário"
+      - "Simular carga de rate limiting em ambiente de staging"
+    labels:
+      - scalability
+      - performance
+    milestone: "M13 — Arquitetura Pronta para Escala"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar estratégias antitravamento no PostgreSQL"
+    body: |
+      Conjunto de práticas para garantir que o banco de dados nunca se torne um gargalo mesmo com muitos acessos simultâneos.
+    tasks:
+      - "Configurar PgBouncer em modo transaction pooling na frente do PostgreSQL primário"
+      - "Configurar statement_timeout = 30s no PostgreSQL para matar queries lentas automaticamente"
+      - "Configurar lock_timeout = 5s para evitar que locks se acumulem"
+      - "Criar índices em todas as foreign keys (tenant_id, client_id, appointment_id, conversation_id)"
+      - "Criar índice em colunas de busca frequente: clients.phone, clients.email, appointments.scheduled_at"
+      - "Implementar VACUUM e ANALYZE automático (autovacuum já é padrão — verificar configuração)"
+      - "Configurar pg_stat_statements para identificar as queries mais lentas"
+      - "Criar dashboard Grafana com: queries/s, conexões ativas, lock waits, table bloat, replication lag"
+      - "Documentar playbook de investigação de lentidão: como identificar e matar queries lentas"
+      - "Configurar particionamento da tabela `messages` por tenant_id e mês (quando > 10M linhas)"
+      - "Configurar particionamento da tabela `followup_logs` por mês"
+      - "Implementar arquivamento automático de dados > 1 ano para tabela separada"
+    labels:
+      - database
+      - scalability
+      - performance
+    milestone: "M13 — Arquitetura Pronta para Escala"
+    assignees:
+      - WMSolutionsTI

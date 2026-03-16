@@ -101,7 +101,6 @@ Cliente → WhatsApp/Telegram/Instagram/E-mail
 | 📊 **Relatórios** | Métricas de atendimento, engajamento e financeiro |
 
 ### Para a Plataforma (admin)
-
 | Funcionalidade | Descrição |
 |---|---|
 | 🏢 **Gestão de Tenants** | Visualize, ative, suspenda e altere planos de qualquer tenant |
@@ -113,22 +112,10 @@ Cliente → WhatsApp/Telegram/Instagram/E-mail
 
 ## 🏛️ Arquitetura Geral
 
-A plataforma é construída em torno de **quatro pilares arquiteturais**:
 
 ### 1. Hub de Comunicação Centralizado (Chatwoot)
 Todos os canais de comunicação (WhatsApp, Telegram, Instagram, Facebook, e-mail, formulários web) são conectados ao Chatwoot. Cada nutricionista possui sua própria **Inbox** dentro do Chatwoot, que funciona como o **identificador do tenant** no sistema.
-
-### 2. Processamento Assíncrono por Filas (RabbitMQ)
-Nenhuma mensagem é processada de forma síncrona. O webhook do Chatwoot publica eventos no RabbitMQ imediatamente, e workers independentes consomem e processam esses eventos. Isso garante:
-- Respostas instantâneas ao webhook (sem timeout)
-- Processamento confiável com retry automático
-- Escalonamento horizontal sem mudanças de código
-
-### 3. Engine de Automação (n8n)
-O n8n atua como motor de automação de negócio. Workers acionam workflows do n8n via webhook, que por sua vez chamam a API interna da plataforma para executar ações (enviar mensagens, agendar tarefas, atualizar registros).
-
 ### 4. Multi-Tenancy por Isolamento de Dados
-Cada nutricionista é um tenant completamente isolado. Todos os modelos de dados incluem `tenant_id`, e o sistema garante que nenhum tenant possa acessar dados de outro — tanto por design da aplicação quanto por testes automatizados de isolamento.
 
 ---
 
@@ -137,13 +124,8 @@ Cada nutricionista é um tenant completamente isolado. Todos os modelos de dados
 | Componente | Tecnologia | Função |
 |---|---|---|
 | **Backend API** | FastAPI (Python) | API REST principal, recepção de webhooks, lógica de negócio |
-| **Workers** | FastAPI + aio-pika | Consumidores de fila RabbitMQ, processamento assíncrono |
-| **Banco de Dados** | PostgreSQL | Armazenamento principal de dados |
-| **Fila de Mensagens** | RabbitMQ | Broker de mensagens, DLQ, roteamento de eventos |
-| **Cache** | Redis | Cache de configurações, rate limiting, sessões, locks distribuídos |
-| **Armazenamento de Arquivos** | MinIO | Armazenamento de objetos compatível com S3 |
 | **Hub de Comunicação** | Chatwoot | Centralização de canais de atendimento |
-| **Engine de Automação** | n8n | Workflows de automação de negócio |
+| **Engine de Automação** | Workers Python | Automação de negócio, fluxos, follow-ups, reativação |
 | **Frontend** | Next.js 14+ (TypeScript) | Dashboard do nutricionista e painel admin |
 | **Containerização** | Docker + Docker Compose | Empacotamento e orquestração de serviços |
 | **Proxy / Túnel** | Cloudflare Tunnel (Cloudflared) | Exposição segura dos serviços, TLS, DDoS protection |
@@ -168,7 +150,6 @@ nutriapro/
 │   │   │   ├── schemas/            # Schemas Pydantic (request/response)
 │   │   │   ├── routers/            # Routers FastAPI (um por domínio)
 │   │   │   ├── services/           # Camada de lógica de negócio
-│   │   │   ├── repositories/       # Camada de acesso a dados
 │   │   │   ├── integrations/       # Clientes de serviços externos
 │   │   │   ├── middleware/         # Middlewares customizados
 │   │   │   └── utils/              # Utilitários compartilhados
@@ -194,7 +175,6 @@ nutriapro/
 │       ├── app/                    # App Router (Next.js 14+)
 │       ├── components/             # Componentes React
 │       ├── lib/                    # API client, hooks, utils
-│       ├── public/
 │       ├── Dockerfile
 │       └── .env.example
 │
@@ -205,9 +185,6 @@ nutriapro/
 │   └── cloudflare/                 # Configurações Cloudflare Tunnel
 │
 ├── scripts/
-│   ├── migrate.sh                  # Script de execução de migrations
-│   ├── seed.sh                     # Seed de dados iniciais
-│   └── backup.sh                   # Backup manual do banco
 │
 ├── docs/
 │   ├── adr/                        # Architecture Decision Records
@@ -215,7 +192,6 @@ nutriapro/
 │   └── runbooks/                   # Runbooks operacionais
 │
 ├── .github/
-│   └── workflows/                  # Pipelines CI/CD (GitHub Actions)
 │
 ├── Makefile                        # Comandos utilitários
 ├── .editorconfig
@@ -235,80 +211,59 @@ Antes de começar, certifique-se de ter instalado em sua máquina:
 - [Make](https://www.gnu.org/software/make/) (opcional, mas recomendado)
 - Python `>= 3.11` (apenas para desenvolvimento sem Docker)
 - Node.js `>= 20.x` (apenas para desenvolvimento frontend sem Docker)
+---
+
+
+## ⚙️ Configuração e Uso com Docker Swarm
+
+### Requisitos
+- Docker Engine >= 24.x
+- Docker Swarm ativado (`docker swarm init`)
+- Permissões para criar volumes e redes
+
+### Passos
+1. Clone o repositório
+    ```bash
+    git clone https://github.com/WMSolutionsTI/nutria-pro.git
+    cd nutria-pro
+    ```
+2. Configure variáveis de ambiente (ver `_docs/environment-variables.md`)
+3. Inicie o Swarm:
+    ```bash
+    docker swarm init
+    ```
+4. Faça o deploy da stack:
+    ```bash
+    docker stack deploy -c _infra/docker-compose.yml nutria-pro
+    ```
+5. Acompanhe os serviços:
+    ```bash
+    docker stack services nutria-pro
+    docker stack ps nutria-pro
+    ```
+6. Para atualizar, use:
+    ```bash
+    docker stack deploy -c _infra/docker-compose.yml nutria-pro
+    ```
+7. Para remover:
+    ```bash
+    docker stack rm nutria-pro
+    ```
+
+### Vantagens do Swarm
+- Replicação automática, alta disponibilidade
+- Deploy rolling, atualização sem downtime
+- Orquestração nativa de serviços distribuídos
 
 ---
 
-## ⚙️ Configuração do Ambiente Local
-
-### 1. Clone o repositório
-
-```bash
-git clone https://github.com/WMSolutionsTI/nutria-pro.git
-cd nutria-pro
-```
-
-### 2. Configure as variáveis de ambiente
-
-Copie os arquivos de exemplo de cada serviço e preencha com seus valores locais:
-
-```bash
-# Backend API
-cp services/api/.env.example services/api/.env
-
-# Workers
-cp services/workers/.env.example services/workers/.env
-
-# Frontend
-cp services/frontend/.env.example services/frontend/.env
-```
-
-> ⚠️ **Nunca commite arquivos `.env` com credenciais reais.** Os arquivos `.env` estão listados no `.gitignore`.
-
-### 3. Suba o ambiente de desenvolvimento
-
-```bash
-# Usando Make (recomendado)
-make dev
-
-# Ou diretamente com Docker Compose
-docker compose up -d
-```
-
-### 4. Execute as migrations do banco de dados
-
-```bash
-make migrate
-
-# Ou diretamente
-docker compose exec api alembic upgrade head
-```
-
-### 5. Popule os dados iniciais (planos, configurações)
-
-```bash
-make seed
-
-# Ou diretamente
-docker compose exec api python scripts/seed.py
-```
-
-### 6. Acesse os serviços
-
-| Serviço | URL Local | Credenciais Padrão |
-|---|---|---|
-| **Dashboard (Frontend)** | http://localhost:3000 | — |
-| **API (Swagger)** | http://localhost:8000/docs | — |
-| **Chatwoot** | http://localhost:3001 | admin@example.com / changeme |
-| **RabbitMQ Management** | http://localhost:15672 | guest / guest |
-| **MinIO Console** | http://localhost:9001 | minioadmin / minioadmin |
-| **n8n** | http://localhost:5678 | admin / changeme |
-| **Grafana** | http://localhost:3002 | admin / admin |
+## Observação
+Para desenvolvimento local, Compose ainda pode ser usado. Para produção, Swarm é recomendado.
 
 ---
 
 ## 🔧 Variáveis de Ambiente
 
-### `services/api/.env`
 
 ```dotenv
 # Aplicação
@@ -333,12 +288,7 @@ MINIO_USE_SSL=false
 
 # Chatwoot
 CHATWOOT_BASE_URL=http://chatwoot-web:3000
-CHATWOOT_API_TOKEN=seu-token-de-sistema
 CHATWOOT_WEBHOOK_SECRET=seu-webhook-secret
-
-# n8n
-N8N_BASE_URL=http://n8n:5678
-N8N_INTERNAL_API_KEY=sua-chave-interna
 
 # JWT
 JWT_PRIVATE_KEY_PATH=/app/keys/private.pem
@@ -376,15 +326,7 @@ make shell-db     # Abre o psql no container do PostgreSQL
 # Escalar para 3 réplicas do worker de mensagens
 docker compose up -d --scale worker-message=3
 
-# Escalar para 5 réplicas
-docker compose up -d --scale worker-message=5
-```
 
-> Os workers são completamente stateless. Adicionar ou remover réplicas não requer nenhuma alteração de configuração ou código.
-
----
-
-## 🗃️ Migrations do Banco de Dados
 
 O projeto utiliza **Alembic** para controle de versão do schema do banco de dados.
 
@@ -392,7 +334,6 @@ O projeto utiliza **Alembic** para controle de versão do schema do banco de dad
 
 ```bash
 # Gera automaticamente com base nas mudanças nos modelos
-docker compose exec api alembic revision --autogenerate -m "descricao_da_mudanca"
 
 # Cria migration vazia (para casos especiais)
 docker compose exec api alembic revision -m "descricao_da_mudanca"
@@ -500,8 +441,8 @@ Cada nutricionista possui exatamente um **Inbox** no Chatwoot. Esse `inbox_id` �
 9. Worker cria/atualiza registro do cliente no banco
 10. Worker armazena a mensagem no banco
 11. Worker avalia regras de automação do tenant
-12. Worker aciona workflow n8n (se aplicável)
-13. n8n executa automação e chama API interna
+12. Worker avalia regras de automação do tenant e executa workflow Python
+13. Worker executa automação e chama API interna
 14. API interna publica mensagem de resposta na fila
 15. Worker de envio chama API do Chatwoot para enviar resposta
 16. Cliente recebe a resposta pelo WhatsApp
@@ -561,23 +502,23 @@ Mensagens que esgotam as tentativas de retry são enviadas para a DLQ. A platafo
 
 ## 🤖 Engine de Automação
 
-O **n8n** é o motor de automação da plataforma. Os workers acionam workflows via webhook, e os workflows chamam de volta a API interna para executar ações.
+Workers Python são o motor de automação da plataforma. Cada worker consome filas específicas, processa eventos e executa ações diretamente, sem dependência de n8n.
 
 ### Workflows disponíveis (templates)
 
 | Workflow | Gatilho | Ação |
 |---|---|---|
-| 🤝 **Boas-vindas** | Nova conversa de cliente novo | Envia mensagem de boas-vindas personalizada |
-| 📅 **Confirmação de Consulta** | Consulta agendada | Envia confirmação com detalhes |
-| ⏰ **Lembrete de Consulta** | 24h e 2h antes da consulta | Envia lembrete e solicita confirmação |
-| 📋 **Follow-up Pós-Consulta** | Consulta marcada como concluída | Envia follow-up e plano alimentar |
-| 💤 **Reativação de Clientes** | Cliente sem interação > N dias | Dispara mensagem de reativação |
-| 💰 **Cobrança** | Manual ou agendado | Envia link de pagamento e faz follow-up |
-| 🌙 **Fora do Horário** | Mensagem fora do horário configurado | Responde automaticamente informando o horário |
+| 🤝 **Boas-vindas** | Nova conversa de cliente novo | Worker BoasVindasWorker envia mensagem personalizada |
+| 📅 **Confirmação de Consulta** | Consulta agendada | Worker ConsultaWorker envia confirmação com detalhes |
+| ⏰ **Lembrete de Consulta** | 24h e 2h antes da consulta | Worker LembreteWorker envia lembrete e solicita confirmação |
+| 📋 **Follow-up Pós-Consulta** | Consulta marcada como concluída | Worker FollowUpWorker envia follow-up e plano alimentar |
+| 💤 **Reativação de Clientes** | Cliente sem interação > N dias | Worker LeadRecoveryWorker dispara mensagem de reativação |
+| 💰 **Cobrança** | Manual ou agendado | Worker CobrançaWorker envia link de pagamento e faz follow-up |
+| 🌙 **Fora do Horário** | Mensagem fora do horário configurado | Worker ForaHorarioWorker responde automaticamente informando o horário |
 
-### Integrações internas (n8n → API)
+### Integrações internas (Workers → API)
 
-O n8n se comunica com a API interna para executar ações:
+Workers Python se comunicam diretamente com a API interna para executar ações:
 
 ```
 POST /internal/messages/send         → Envia mensagem via Chatwoot
@@ -693,7 +634,7 @@ Consulte o arquivo [`docs/roadmap.md`](docs/roadmap.md) para o roadmap completo 
 | **Fase 3** | Arquitetura multi-tenant | 🔲 Planejado |
 | **Fase 4** | Integração Chatwoot e pipeline de mensagens | 🔲 Planejado |
 | **Fase 5** | Sistema de workers e filas | 🔲 Planejado |
-| **Fase 6** | Engine de automação (n8n) | 🔲 Planejado |
+| **Fase 6** | Engine de automação (workers Python) | 🔲 Planejado |
 | **Fase 7** | Funcionalidades de negócio | 🔲 Planejado |
 | **Fase 8** | Frontend (Next.js) | 🔲 Planejado |
 | **Fase 9** | Observabilidade e monitoramento | 🔲 Planejado |

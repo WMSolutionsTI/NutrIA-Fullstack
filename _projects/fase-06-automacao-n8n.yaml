@@ -1,0 +1,272 @@
+# fase-06-automacao-n8n.yaml
+# Fase 6 — Engine de Automação (Integração n8n)
+# Milestone: M6 — Engine de Automação Integrada
+
+owner: WMSolutionsTI
+repo: NutriSaas
+
+project:
+  name: "Fase 06 — Engine de Automação (Integração n8n)"
+
+labels:
+  - name: automation
+    color: "#f97316"
+    description: "Automações, workflows e engine n8n"
+  - name: n8n
+    color: "#ea580c"
+    description: "Configuração e workflows do n8n"
+  - name: backend
+    color: "#009688"
+    description: "Endpoints internos e callbacks"
+  - name: integration
+    color: "#7c3aed"
+    description: "Integrações entre serviços"
+  - name: feature
+    color: "#22c55e"
+    description: "Nova funcionalidade"
+  - name: ai-agent
+    color: "#8b5cf6"
+    description: "Agente de IA secretária virtual e controle de automação"
+  - name: human-escalation
+    color: "#ef4444"
+    description: "Fluxo de escalação para atendimento humano"
+  - name: scheduling
+    color: "#0891b2"
+    description: "Agendamentos e Google Calendar"
+  - name: payments
+    color: "#dc2626"
+    description: "Integração de pagamentos (Asaas)"
+  - name: leads
+    color: "#d97706"
+    description: "Recuperação de leads e campanhas"
+  - name: calls
+    color: "#6366f1"
+    description: "Gestão de ligações e Retell AI"
+
+milestones:
+  - title: "M6 — Engine de Automação Integrada"
+    due_date: "2026-06-10"
+    description: "n8n integrado, workflows templates construídos, ciclo trigger→ação funcionando"
+
+issues:
+  - title: "Configurar e securizar instância n8n"
+    body: |
+      Deploy e configuração segura do n8n com PostgreSQL como backend, autenticação e Cloudflare Access.
+      Referência: Roadmap Fase 6, seção 6.1
+    tasks:
+      - "Configurar n8n com PostgreSQL como storage de workflows (não SQLite)"
+      - "Configurar EXECUTIONS_DATA_SAVE_ON_SUCCESS e ON_ERROR como all"
+      - "Configurar webhook base URL para https://n8n.dominio.com"
+      - "Habilitar autenticação básica na UI do n8n"
+      - "Validar Cloudflare Access em frente ao subdomínio do n8n"
+      - "Configurar API key do n8n para gestão programática de workflows"
+      - "Ajustar timezone do n8n para UTC"
+    labels:
+      - n8n
+      - automation
+    milestone: "M6 — Engine de Automação Integrada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar arquitetura de trigger e callback entre workers e n8n"
+    body: |
+      Definir o payload padrão de trigger e os endpoints internos que o n8n chama de volta na plataforma.
+      Referência: Roadmap Fase 6, seção 6.2
+    tasks:
+      - "Definir payload padrão de trigger: tenant_id, trigger_event, client_id, conversation_id, message_content, channel, metadata"
+      - "Workers chamam webhook URL do n8n armazenada em automation_workflows.n8n_webhook_url"
+      - "Implementar POST /internal/messages/send"
+      - "Implementar POST /internal/appointments/schedule"
+      - "Implementar POST /internal/clients/{id}/tag"
+      - "Implementar POST /internal/tasks/schedule"
+      - "Proteger rotas /internal/* com X-Internal-API-Key (não JWT)"
+      - "Criar middleware de autenticação interno separado do middleware de usuário"
+      - "Aplicar rate limiting separado nas rotas internas"
+    labels:
+      - backend
+      - integration
+    milestone: "M6 — Engine de Automação Integrada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Construir workflow template: Mensagem de Boas-vindas"
+    body: |
+      Criar workflow n8n que envia mensagem de boas-vindas personalizada a novos clientes.
+      Referência: Roadmap Fase 6, seção 6.3.1
+    tasks:
+      - "Criar webhook trigger no n8n para evento conversation_created"
+      - "Verificar se é cliente novo (primeira conversa)"
+      - "Chamar POST /internal/messages/send com mensagem personalizável"
+      - "Suportar delay configurável antes do envio (ex: 2 minutos)"
+      - "Testar fluxo end-to-end com cliente de teste"
+    labels:
+      - automation
+      - n8n
+    milestone: "M6 — Engine de Automação Integrada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Construir workflow template: Confirmação e Lembrete de Consulta"
+    body: |
+      Criar workflows de confirmação imediata e lembretes automáticos para consultas agendadas.
+      Referência: Roadmap Fase 6, seções 6.3.2 e 6.3.3
+    tasks:
+      - "Criar workflow de confirmação de consulta (trigger: appointment_created)"
+      - "Enviar mensagem de confirmação com detalhes da consulta"
+      - "Criar workflow de lembrete 24h antes da consulta"
+      - "Criar workflow de lembrete 2h antes da consulta"
+      - "Aguardar confirmação de resposta do cliente"
+      - "Integrar com POST /internal/tasks/schedule para agendamento dos lembretes"
+    labels:
+      - automation
+      - n8n
+    milestone: "M6 — Engine de Automação Integrada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Construir workflow template: Follow-up Pós-Consulta"
+    body: |
+      Workflow que envia follow-up e plano alimentar após consulta ser marcada como concluída.
+      Referência: Roadmap Fase 6, seção 6.3.4
+    tasks:
+      - "Trigger: consulta marcada como completed"
+      - "Aguardar delay configurável (ex: 24h)"
+      - "Enviar mensagem de follow-up via /internal/messages/send"
+      - "Buscar e enviar arquivo de plano alimentar do cliente via MinIO"
+    labels:
+      - automation
+      - n8n
+    milestone: "M6 — Engine de Automação Integrada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Construir workflows templates: Reativação, Cobrança e Fora do Horário"
+    body: |
+      Construir os workflows restantes da versão 1.0 da engine de automação.
+      Referência: Roadmap Fase 6, seções 6.3.5, 6.3.6, 6.3.7
+    tasks:
+      - "Workflow de reativação de clientes inativos (trigger: sem interação > N dias)"
+      - "Adicionar tag inactive se sem resposta após 7 dias"
+      - "Workflow de cobrança: enviar link de pagamento e follow-up em 48h"
+      - "Workflow de auto-resposta fora do horário (verificar horário configurado do tenant)"
+    labels:
+      - automation
+      - n8n
+    milestone: "M6 — Engine de Automação Integrada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar gestão de workflows por tenant"
+    body: |
+      Criar tabela, API e logs de execução para gestão de workflows por tenant.
+      Referência: Roadmap Fase 6, seção 6.4
+    tasks:
+      - "Criar model e migration da tabela automation_workflows"
+      - "Criar model e migration da tabela workflow_execution_logs"
+      - "Implementar PUT /workflows/{id}/toggle (habilitar/desabilitar)"
+      - "Implementar PUT /workflows/{id}/config (atualizar parâmetros)"
+      - "Gravar log de execução em workflow_execution_logs a cada trigger"
+      - "Expor logs de execução no dashboard do tenant"
+    labels:
+      - automation
+      - backend
+    milestone: "M6 — Engine de Automação Integrada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[N8N] Importar e adaptar workflow 01 — Secretária v3 (Agente IA Principal)"
+    body: |
+      Adaptar `01. Secretária v3.json` para o contexto multi-tenant:
+      - Receber tenant_id via webhook header
+      - Buscar prompt configurado pelo nutricionista no banco
+      - Verificar flag `ai_agent_enabled` antes de processar
+      - Enviar resposta via Evolution API / Chatwoot
+      - Se precisar de escalação, publicar em `queue.human_escalation`
+    labels:
+      - n8n
+      - ai-agent
+      - feature
+    milestone: "M6 — Engine de Automação Integrada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[N8N] Importar e adaptar workflow 05 — Escalar Humano"
+    body: |
+      Adaptar `05. Escalar humano.json`:
+      - Integrar com endpoint de toggle AI agent
+      - Formatar mensagem WhatsApp com link Chatwoot parametrizado por tenant
+      - Chamar API interna em vez de credenciais hardcoded
+    labels:
+      - n8n
+      - human-escalation
+      - feature
+    milestone: "M6 — Engine de Automação Integrada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[N8N] Importar workflows de agendamento (03, 04, 04.1, 09, 11)"
+    body: |
+      Adaptar workflows de agendamento para multi-tenant:
+      - 03: Buscar janelas disponíveis Google Calendar
+      - 04: Criar evento Google Calendar
+      - 4.1: Atualizar agendamento
+      - 09: Desmarcar agendamento e enviar alerta
+      - 11: Agente de Lembretes de Agendamento
+
+      Cada um deve usar as credenciais Google do tenant correspondente (OAuth por nutricionista).
+    labels:
+      - n8n
+      - scheduling
+      - feature
+    milestone: "M6 — Engine de Automação Integrada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[N8N] Importar workflows financeiros — 06 Integração Asaas"
+    body: |
+      Adaptar `06. Integração Asaas.json` para multi-tenant:
+      - Chave API Asaas por tenant (configurada no painel)
+      - Webhooks de pagamento roteados por tenant_id
+      - Emissão de cobrança, confirmação de pagamento, inadimplência
+    labels:
+      - n8n
+      - payments
+      - feature
+    milestone: "M6 — Engine de Automação Integrada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[N8N] Importar workflows de recuperação e ligações (12, 13, Retell)"
+    body: |
+      - 12: Gestão de ligações (Retell AI)
+      - 13: Agente de Recuperação de Leads
+      - Retell - Secretária v3: voz AI para chamadas
+
+      Decidir: manter em n8n ou migrar para worker dedicado baseado em volume.
+    labels:
+      - n8n
+      - leads
+      - calls
+      - feature
+    milestone: "M6 — Engine de Automação Integrada"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[DECISÃO ARQUITETURAL] Migrar workflows de alta frequência do n8n para Workers Python dedicados"
+    body: |
+      Documentar a decisão de migrar workflows do n8n para workers quando o volume justificar.
+      O n8n é excelente para automações de negócio de baixa/média frequência.
+      Para fluxos de alta frequência (anamnese, acompanhamento diário, geração de plano), workers Python dedicados são mais performáticos, testáveis e escaláveis.
+    tasks:
+      - "Documentar critério de migração: > 1000 execuções/dia ou latência > 2s no n8n"
+      - "Listar workflows que permanecerão no n8n: boas-vindas, confirmação consulta, lembretes, cobrança, fora do horário"
+      - "Listar workflows migrados para workers Python: anamnese, geração de plano, acompanhamento diário"
+      - "Criar ADR (Architecture Decision Record) em docs/adr/ documentando a decisão e motivação"
+      - "Garantir que os workers Python usam as mesmas filas RabbitMQ definidas na Fase 5"
+    labels:
+      - automation
+      - n8n
+      - feature
+    milestone: "M6 — Engine de Automação Integrada"
+    assignees:
+      - WMSolutionsTI

@@ -1,0 +1,50 @@
+# ============================================================
+# NutrIA-Pro — Pre-commit Hooks
+# Roda automaticamente antes de cada git commit
+# ============================================================
+# Instalação: pip install pre-commit && pre-commit install
+# Executar manualmente: pre-commit run --all-files
+# ============================================================
+
+repos:
+  # Hooks básicos de qualidade de arquivo
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace       # Remove espaços no final das linhas
+      - id: end-of-file-fixer         # Garante linha vazia no final
+      - id: check-yaml                # Valida sintaxe de arquivos YAML
+      - id: check-json                # Valida sintaxe de arquivos JSON
+      - id: check-toml                # Valida sintaxe de arquivos TOML
+      - id: check-merge-conflict      # Bloqueia commit com markers de merge conflict
+      - id: check-added-large-files   # Bloqueia arquivos grandes (>500KB)
+        args: ['--maxkb=500']
+      - id: detect-private-key        # Detecta chaves privadas acidentais
+
+  # Ruff — linting Python (muito mais rápido que flake8)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix]                 # Corrige automaticamente o que for possível
+        files: ^services/api/
+      - id: ruff-format               # Também formata (substitui black no pre-commit)
+        files: ^services/api/
+
+  # Black — formatação Python (garantia extra)
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+        language_version: python3.12
+        files: ^services/api/
+
+  # Prettier — formatação TypeScript/JavaScript/CSS
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        files: ^services/frontend/
+        types_or: [ts, tsx, javascript, jsx, json, css, markdown]
+        additional_dependencies:
+          - prettier@3.2.5

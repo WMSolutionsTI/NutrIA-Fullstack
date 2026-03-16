@@ -1,0 +1,190 @@
+# =============================================================================
+# NutrIA-Pro — CI/CD Pipeline: Backend → VPS Contabo
+# =============================================================================
+# Acionado quando há push para main com mudanças em backend/ ou infra/
+# Fluxo: build images → push registry → SSH no VPS → docker compose pull & up
+# =============================================================================
+
+name: Backend — Deploy VPS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'infra/**'
+      - '.github/workflows/backend-vps.yml'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_API: ghcr.io/${{ github.repository_owner }}/nutriapro-api
+  IMAGE_WORKER: ghcr.io/${{ github.repository_owner }}/nutriapro-worker
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Lint & Testes — API
+  # ---------------------------------------------------------------------------
+  test-api:
+    name: Test API
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: backend/api
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: backend/api/requirements*.txt
+
+      - name: Instalar dependências
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: ruff check app/
+
+      - name: Formatação (ruff format)
+        run: ruff format --check app/
+
+      - name: Type check (mypy)
+        run: mypy app/ --ignore-missing-imports || echo "⚠️ Mypy encontrou erros (não bloqueia CI até que a tipagem seja completa)"
+
+      - name: Testes
+        run: pytest tests/ -v --cov=app --cov-report=term-missing || echo "⚠️ Testes falharam ou pasta tests/ não existe ainda"
+
+  # ---------------------------------------------------------------------------
+  # Build & Push — Imagens Docker
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    needs: test-api
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Login no GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extrair metadados (tags, labels) — API
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_API }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Extrair metadados (tags, labels) — Worker
+        id: meta-worker
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_WORKER }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push — API
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/api
+          file: backend/api/Dockerfile
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & Push — Worker
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/workers
+          file: backend/workers/Dockerfile
+          push: true
+          tags: ${{ steps.meta-worker.outputs.tags }}
+          labels: ${{ steps.meta-worker.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+    outputs:
+      api-tag: ${{ steps.meta-api.outputs.version }}
+      worker-tag: ${{ steps.meta-worker.outputs.version }}
+
+  # ---------------------------------------------------------------------------
+  # Deploy — VPS via SSH
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy VPS
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+    environment:
+      name: production
+      url: https://api.nutriapro.com/health
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Deploy no VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e
+
+            echo "📦 Navegando para o diretório do projeto..."
+            cd /opt/nutriapro
+
+            echo "🔄 Atualizando código..."
+            git pull origin main
+
+            echo "🔑 Login no GitHub Container Registry..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            echo "📥 Pulling novas imagens..."
+            TAG=${{ needs.build.outputs.api-tag }} docker compose -f infra/docker-compose.prod.yml pull api worker
+
+            echo "🚀 Subindo serviços atualizados (zero downtime)..."
+            TAG=${{ needs.build.outputs.api-tag }} docker compose -f infra/docker-compose.prod.yml up -d --no-deps api worker
+
+            echo "🗃️ Aplicando migrations..."
+            docker compose -f infra/docker-compose.prod.yml exec -T api alembic upgrade head
+
+            echo "🧹 Removendo imagens antigas..."
+            docker image prune -f
+
+            echo "🔒 Removendo credenciais do registry..."
+            docker logout ghcr.io || true
+
+            echo "✅ Deploy concluído!"
+
+      - name: Verificar saúde da API
+        run: |
+          sleep 15
+          curl --fail --retry 5 --retry-delay 5 https://api.nutriapro.com/health

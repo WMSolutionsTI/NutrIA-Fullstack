@@ -1,0 +1,281 @@
+# fase-07-funcionalidades-negocio.yaml
+# Fase 7 — Funcionalidades de Negócio SaaS
+# Milestone: M7 — Funcionalidades de Negócio Completas
+
+owner: WMSolutionsTI
+repo: NutriSaas
+
+project:
+  name: "Fase 07 — Funcionalidades de Negócio SaaS"
+
+labels:
+  - name: appointments
+    color: "#0891b2"
+    description: "Agendamento e gestão de consultas"
+  - name: crm
+    color: "#7c3aed"
+    description: "CRM de clientes e histórico"
+  - name: files
+    color: "#059669"
+    description: "Gestão de arquivos e armazenamento"
+  - name: campaigns
+    color: "#d97706"
+    description: "Campanhas e disparos em massa"
+  - name: billing
+    color: "#dc2626"
+    description: "Integração de pagamentos e cobranças"
+  - name: feature
+    color: "#22c55e"
+    description: "Nova funcionalidade"
+  - name: ai-agent
+    color: "#8b5cf6"
+    description: "Agente de IA secretária virtual e controle de automação"
+  - name: human-escalation
+    color: "#ef4444"
+    description: "Fluxo de escalação para atendimento humano"
+  - name: frontend
+    color: "#f59e0b"
+    description: "Interface do painel do nutricionista"
+  - name: chatwoot
+    color: "#1F93FF"
+    description: "Integração com Chatwoot API e webhooks"
+  - name: google-drive
+    color: "#34a853"
+    description: "Integração com Google Drive para envio de arquivos"
+  - name: messaging
+    color: "#FF6600"
+    description: "Mensageria e envio de mensagens via WhatsApp/Chatwoot"
+  - name: medical-record
+    color: "#7c3aed"
+    description: "Prontuário eletrônico e dados clínicos"
+  - name: anamnesis
+    color: "#8b5cf6"
+    description: "Entrevista de anamnese pré-consulta"
+  - name: meal-plan
+    color: "#059669"
+    description: "Plano alimentar gerado por IA"
+  - name: followup
+    color: "#0891b2"
+    description: "Acompanhamento diário pós-consulta"
+  - name: ai-clinical
+    color: "#dc2626"
+    description: "Pipeline clínico completo com IA"
+
+milestones:
+  - title: "M7 — Funcionalidades de Negócio Completas"
+    due_date: "2026-07-01"
+    description: "Consultas, CRM, arquivos, campanhas e pagamentos implementados"
+
+issues:
+  - title: "Implementar gerenciamento de consultas (Appointments)"
+    body: |
+      Criar sistema completo de agendamento com tipos de consulta, CRUD, lembretes automáticos e verificação de disponibilidade.
+      Referência: Roadmap Fase 7, seção 7.1
+    tasks:
+      - "Criar model e migration da tabela appointments"
+      - "Criar model e migration da tabela appointment_types (configurável por tenant)"
+      - "Implementar GET /appointments com filtros (data, cliente, status)"
+      - "Implementar POST /appointments (agendar consulta)"
+      - "Implementar PUT /appointments/{id}"
+      - "Implementar POST /appointments/{id}/confirm"
+      - "Implementar POST /appointments/{id}/complete"
+      - "Implementar POST /appointments/{id}/cancel"
+      - "Implementar GET /appointments/calendar (dados para visualização semanal/mensal)"
+      - "Auto-agendar tarefas de lembrete ao criar consulta (24h, 2h antes e follow-up)"
+      - "Implementar GET /appointments/availability (slots disponíveis)"
+      - "Ao criar consulta, publicar evento appointment.confirmed na fila ai.clinical para iniciar anamnese"
+      - "Ao completar consulta, publicar evento appointment.completed na fila meal_plan.generator"
+      - "Implementar GET /appointments/{id}/medical-record (visualiza prontuário completo da consulta)"
+      - "Implementar POST /appointments/{id}/notes (nutricionista adiciona observações durante consulta)"
+    labels:
+      - appointments
+    milestone: "M7 — Funcionalidades de Negócio Completas"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar CRM de clientes"
+    body: |
+      API completa de gestão de clientes com tags, notas clínicas, histórico e importa��ão CSV.
+      Referência: Roadmap Fase 7, seção 7.2
+    tasks:
+      - "Implementar GET /clients com busca paginada e filtros"
+      - "Implementar POST /clients (criação manual)"
+      - "Implementar GET /clients/{id} (perfil completo)"
+      - "Implementar PUT /clients/{id}"
+      - "Implementar GET /clients/{id}/conversations"
+      - "Implementar GET /clients/{id}/appointments"
+      - "Implementar GET /clients/{id}/notes e POST /clients/{id}/notes"
+      - "Implementar GET /clients/{id}/files"
+      - "Implementar POST e DELETE /clients/{id}/tags"
+      - "Criar model client_tags e client_notes (notas imutáveis — append-only)"
+      - "Implementar POST /clients/import (CSV) com job de background e relatório de status"
+      - "Implementar GET /clients/{id}/medical-records (histórico de prontuários do paciente)"
+      - "Implementar GET /clients/{id}/meal-plans (histórico de planos alimentares)"
+      - "Implementar GET /clients/{id}/followup-logs (logs de acompanhamento diário)"
+    labels:
+      - crm
+    milestone: "M7 — Funcionalidades de Negócio Completas"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar gestão de arquivos com MinIO"
+    body: |
+      API de upload, geração de URL pré-assinada, envio via chat e rastreamento de uso de storage.
+      Referência: Roadmap Fase 7, seção 7.3
+    tasks:
+      - "Implementar POST /files/upload (multipart, valida tipo e tamanho)"
+      - "Armazenar no MinIO: tenant-files/{tenant_id}/{categoria}/{uuid}-{filename}"
+      - "Criar model e migration de tenant_files"
+      - "Implementar GET /files/{id}/download (gerar URL pré-assinada — TTL 15 min)"
+      - "Validar tenant ownership antes de gerar URL"
+      - "Implementar POST /files/{id}/send (download MinIO → upload Chatwoot → enviar mensagem)"
+      - "Rastrear files_stored_mb no UsageTrackingService"
+      - "Enforcar limite de storage por plano no upload"
+    labels:
+      - files
+    milestone: "M7 — Funcionalidades de Negócio Completas"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar sistema de campanhas"
+    body: |
+      Criar campanhas com segmentação de audiência, agendamento, execução controlada e estatísticas de entrega.
+      Referência: Roadmap Fase 7, seção 7.4
+    tasks:
+      - "Criar model e migration da tabela campaigns"
+      - "Criar model e migration da tabela campaign_recipients"
+      - "Implementar POST /campaigns, PUT /campaigns/{id}"
+      - "Implementar POST /campaigns/{id}/preview-audience (estimar audiência sem enviar)"
+      - "Implementar POST /campaigns/{id}/launch"
+      - "Implementar POST /campaigns/{id}/cancel"
+      - "Implementar GET /campaigns/{id}/stats"
+      - "Implementar worker de execução de campanha via fila scheduler.tasks"
+      - "Respeitar limite diário de mensagens por tenant"
+      - "Implementar opt-out: marcar cliente que responder STOP como opted_out"
+    labels:
+      - campaigns
+    milestone: "M7 — Funcionalidades de Negócio Completas"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar integração de pagamentos"
+    body: |
+      Integrar gateway de pagamento para assinaturas da plataforma e links de pagamento para os clientes dos nutricionistas.
+      Referência: Roadmap Fase 7, seção 7.5
+    tasks:
+      - "Avaliar e selecionar gateways: Stripe (global) + MercadoPago (Brasil)"
+      - "Implementar abstração PaymentGatewayService"
+      - "Implementar POST /billing/subscribe (checkout de assinatura)"
+      - "Implementar receptor de webhooks do gateway de pagamento"
+      - "Tratar evento invoice.payment_succeeded: ativar tenant e estender assinatura"
+      - "Tratar evento invoice.payment_failed: aviso e período de carência"
+      - "Tratar invoice.payment_failed na 3ª tentativa: suspender tenant"
+      - "Tratar customer.subscription.cancelled: iniciar fluxo de cancelamento"
+      - "Implementar GET /billing/invoices e GET /billing/portal"
+      - "Implementar POST /payments/links (gerar link de pagamento para cliente do nutricionista)"
+      - "Suporte a MercadoPago Checkout e PIX"
+      - "Webhook de confirmação de pagamento: atualizar status da consulta e enviar recibo"
+    labels:
+      - billing
+    milestone: "M7 — Funcionalidades de Negócio Completas"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[FEATURE] Painel de configuração do Agente de IA para o nutricionista"
+    body: |
+      O nutricionista configura no seu painel:
+      - Nome da secretária virtual (ex: "Ana")
+      - Prompt de contexto (especialidade, tom de voz, informações sobre a clínica)
+      - Horário de atendimento do agente
+      - Mensagem de fora do horário
+      - Mensagem de boas-vindas
+      - Lista de tópicos que devem escalar para humano automaticamente
+
+      Estes dados alimentam o workflow `01. Secretária v3.json` por tenant.
+    labels:
+      - feature
+      - frontend
+      - ai-agent
+    milestone: "M7 — Funcionalidades de Negócio Completas"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[FEATURE] Fluxo completo de escalação e retomada do agente de IA"
+    body: |
+      Fluxo end-to-end:
+
+      1. IA detecta necessidade de escalação (ou cliente solicita falar com humano)
+      2. Worker desabilita `ai_agent_enabled` para aquele contato
+      3. Mensagem enviada ao cliente: "Vou transferir você para [Nome do Nutricionista] agora. Aguarde!"
+      4. WhatsApp enviado ao nutricionista: "⚠️ Atenção! [Nome do Cliente] precisa de atendimento humano. Acesse a conversa: [link Chatwoot]"
+      5. Nutricionista atende no Chatwoot
+      6. Nutricionista clica em "Retomar IA" no painel (ou via API)
+      7. Mensagem enviada ao cliente: "Olá! Estou de volta para continuar te ajudando! 😊"
+      8. `ai_agent_enabled` = true, log registrado
+    labels:
+      - feature
+      - ai-agent
+      - human-escalation
+      - chatwoot
+    milestone: "M7 — Funcionalidades de Negócio Completas"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[FEATURE] Envio de planos alimentares via Google Drive"
+    body: |
+      Baseado no workflow `02. Baixar e enviar arquivo do Google Drive.json`:
+      - Nutricionista faz upload do plano no Google Drive da clínica
+      - Compartilha o ID do arquivo no painel
+      - Sistema envia automaticamente via WhatsApp/Chatwoot quando solicitado pelo cliente ou agendado
+    labels:
+      - feature
+      - google-drive
+      - messaging
+    milestone: "M7 — Funcionalidades de Negócio Completas"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar Prontuário Eletrônico do Paciente (Medical Record)"
+    body: |
+      Sistema completo de prontuário eletrônico que centraliza todas as informações clínicas do paciente para uso durante e após a consulta.
+    tasks:
+      - "Criar model e migration da tabela `medical_records` com campos: appointment_id, client_id, tenant_id, anamnesis_data (JSONB), clinical_notes, weight_kg, height_cm, bmi, body_fat_pct, waist_cm, hip_cm, arm_cm, metabolic_rate, blood_pressure, exam_requests (JSONB), food_preferences (JSONB), financial_restrictions, physical_activity_level, physical_activity_description, health_goals, medications, allergies, status"
+      - "Criar model e migration da tabela `vital_signs_history` (histórico de medidas ao longo do tempo)"
+      - "Implementar GET /medical-records/{client_id} (prontuário completo do paciente — mais recente)"
+      - "Implementar GET /medical-records/{client_id}/history (histórico de todas as consultas)"
+      - "Implementar POST /medical-records (criar prontuário manualmente ou completar anamnese)"
+      - "Implementar PUT /medical-records/{id} (nutricionista atualiza durante consulta)"
+      - "Implementar POST /medical-records/{id}/vital-signs (registrar medidas: peso, altura, circunferências)"
+      - "Implementar POST /medical-records/{id}/exam-request (solicitar exame laboratorial)"
+      - "Implementar GET /medical-records/{id}/exam-requests (listar exames solicitados)"
+      - "Implementar POST /medical-records/{id}/exam-results (registrar resultado de exame)"
+      - "Garantir que prontuário é exibido automaticamente ao nutricionista ao abrir consulta"
+      - "Escrever testes de isolamento: tenant A não consegue ver prontuário do tenant B"
+    labels:
+      - feature
+      - crm
+      - appointments
+      - medical-record
+    milestone: "M7 — Funcionalidades de Negócio Completas"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar geração e gestão de planos alimentares por IA"
+    body: |
+      Interface completa de gestão do plano alimentar no painel da nutricionista, integrada com o worker de IA.
+    tasks:
+      - "Criar endpoint POST /appointments/{id}/generate-meal-plan (dispara worker manualmente se necessário)"
+      - "Criar tela de visualização do plano alimentar gerado pela IA"
+      - "Implementar edição inline de cada refeição e item do plano"
+      - "Implementar botão 'Aprovar Plano' que dispara envio do PDF ao paciente"
+      - "Implementar botão 'Regenerar com IA' que solicita nova versão do plano"
+      - "Implementar comparação entre versões do plano (v1, v2, v3...)"
+      - "Mostrar status do plano: Gerando... / Pronto para Revisão / Aprovado / Enviado ao Paciente"
+      - "Implementar notificação em tempo real quando IA conclui geração do plano"
+    labels:
+      - feature
+      - ai-agent
+      - frontend
+    milestone: "M7 — Funcionalidades de Negócio Completas"
+    assignees:
+      - WMSolutionsTI

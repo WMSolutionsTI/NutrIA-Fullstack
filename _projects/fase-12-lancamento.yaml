@@ -1,0 +1,138 @@
+# fase-12-lancamento.yaml
+# Fase 12 — Preparação para o Lançamento em Produção
+# Milestone: M12 — Pronto para Lançamento
+
+owner: WMSolutionsTI
+repo: NutriSaas
+
+project:
+  name: "Fase 12 — Preparação para o Lançamento em Produção"
+
+labels:
+  - name: launch
+    color: "#7c3aed"
+    description: "Preparação e checklist de lançamento"
+  - name: performance
+    color: "#16a34a"
+    description: "Load testing e otimização de performance"
+  - name: security
+    color: "#e11d48"
+    description: "Revisão final de segurança"
+  - name: operations
+    color: "#0891b2"
+    description: "Runbooks e prontidão operacional"
+
+milestones:
+  - title: "M12 — Pronto para Lançamento"
+    due_date: "2026-08-19"
+    description: "Load testado, runbooks escritos, checklist de lançamento 100% completo"
+
+issues:
+  - title: "Executar load testing no ambiente de staging"
+    body: |
+      Definir cenários, implementar testes de carga com Locust/k6, identificar e resolver gargalos.
+      Referência: Roadmap Fase 12, seção 12.1
+    tasks:
+      - "Definir cenário base: 100 tenants simultâneos, 10 msg/min cada"
+      - "Definir cenário de burst: 500 mensagens em 60 segundos"
+      - "Definir cenário de campanha: 1 campanha com 1000 destinatários simultâneos"
+      - "Implementar testes com Locust ou k6"
+      - "Executar testes contra ambiente de staging"
+      - "Identificar e resolver gargalos de banco (EXPLAIN ANALYZE)"
+      - "Ajustar replicas de workers e prefetch counts com base nos resultados"
+      - "Documentar throughput máximo testado e thresholds de escalonamento"
+    labels:
+      - performance
+      - launch
+    milestone: "M12 — Pronto para Lançamento"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Revisão e otimização de performance do banco de dados"
+    body: |
+      Auditar índices, analisar as 20 queries mais frequentes e avaliar PgBouncer.
+      Referência: Roadmap Fase 12, seção 12.2
+    tasks:
+      - "Revisar todos os índices: FKs, colunas filtradas frequentemente, índices compostos"
+      - "Remover índices não utilizados"
+      - "Executar EXPLAIN ANALYZE nas 20 queries mais frequentes da API"
+      - "Resolver queries com seq scan em tabelas grandes"
+      - "Avaliar e documentar configuração de PgBouncer para connection pooling"
+    labels:
+      - performance
+    milestone: "M12 — Pronto para Lançamento"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Revisão de segurança pré-lançamento (OWASP Top 10)"
+    body: |
+      Conduzir revisão interna de segurança completa com checklist OWASP Top 10.
+      Referência: Roadmap Fase 12, seção 12.3
+    tasks:
+      - "Verificar proteção contra SQL Injection"
+      - "Verificar segurança de autenticação (lockout, rotação, 2FA)"
+      - "Verificar exposição de dados sensíveis"
+      - "Verificar Broken Access Control (isolamento de tenant)"
+      - "Verificar Security Misconfiguration (configs de produção)"
+      - "Verificar XSS no frontend"
+      - "Verificar dependências vulneráveis"
+      - "Verificar logging e monitoramento adequados"
+      - "Confirmar que nenhum endpoint de debug ou credencial de teste existe em produção"
+      - "Validar todas as variáveis de ambiente em produção"
+    labels:
+      - security
+      - launch
+    milestone: "M12 — Pronto para Lançamento"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Escrever runbooks operacionais completos"
+    body: |
+      Criar todos os runbooks de operação para o time de plantão.
+      Referência: Roadmap Fase 12, seção 12.4
+    tasks:
+      - "Runbook: Deploy de nova versão"
+      - "Runbook: Rollback de deploy com falha"
+      - "Runbook: Restart de serviço com falha"
+      - "Runbook: Escalonamento de workers"
+      - "Runbook: Replay de mensagens na DLQ"
+      - "Runbook: Suspensão emergencial de tenant"
+      - "Runbook: Restore de banco de dados a partir do backup"
+      - "Runbook: Purge de fila RabbitMQ (mensagens travadas)"
+      - "Realizar treinamento on-call com o time de engenharia"
+      - "Definir processo de gestão de incidentes com níveis de severidade P0-P3"
+    labels:
+      - operations
+      - launch
+    milestone: "M12 — Pronto para Lançamento"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Executar checklist completo de lançamento"
+    body: |
+      Validar todos os 18 itens do checklist de lançamento antes de abrir para os primeiros tenants.
+      Referência: Roadmap Fase 12, seção 12.5
+    tasks:
+      - "Variáveis de ambiente definidas e verificadas em produção"
+      - "Migrations aplicadas ao banco de produção"
+      - "Cloudflare Tunnel verificado para todos os domínios"
+      - "Certificados SSL verificados (Cloudflare managed)"
+      - "Chatwoot saudável e inboxes configurados"
+      - "Workflows n8n deployados e testados"
+      - "Exchanges, filas e bindings RabbitMQ declarados"
+      - "Todos os dashboards de monitoramento operacionais"
+      - "Todos os alertas configurados e testados (enviar alerta de teste)"
+      - "Monitoramento de uptime externo configurado"
+      - "Jobs de backup rodando e verificados"
+      - "Usuário admin da plataforma criado"
+      - "Planos de assinatura seedados no banco"
+      - "Envio de e-mail (SMTP/transacional) verificado"
+      - "Webhooks do gateway de pagamento registrados e verificados"
+      - "Rate limits testados"
+      - "Resultados de load test revisados e aceitáveis"
+      - "Procedimento de rollback testado no staging"
+    labels:
+      - launch
+    milestone: "M12 — Pronto para Lançamento"
+    assignees:
+      - WMSolutionsTI

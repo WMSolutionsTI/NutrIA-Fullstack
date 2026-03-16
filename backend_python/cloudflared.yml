@@ -1,0 +1,7 @@
+tunnel: nutria-tunnel
+credentials-file: /etc/cloudflared/creds.json
+
+ingress:
+  - hostname: nutria-backend.contabo.com
+    service: http://localhost:80
+  - service: http_status:404

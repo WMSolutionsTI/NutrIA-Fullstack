@@ -1,0 +1,140 @@
+# fase-03-multitenancy.yaml
+# Fase 3 — Arquitetura Multi-Tenant SaaS
+# Milestone: M3 — Core Multi-Tenant Completo
+
+owner: WMSolutionsTI
+repo: NutriSaas
+
+project:
+  name: "Fase 03 — Arquitetura Multi-Tenant SaaS"
+
+labels:
+  - name: multitenancy
+    color: "#8b5cf6"
+    description: "Isolamento, onboarding e ciclo de vida de tenants"
+  - name: backend
+    color: "#009688"
+    description: "Desenvolvimento do backend FastAPI"
+  - name: billing
+    color: "#f59e0b"
+    description: "Planos, assinaturas e cobranças"
+  - name: database
+    color: "#336791"
+    description: "Models, migrations e acesso a dados"
+
+milestones:
+  - title: "M3 — Core Multi-Tenant Completo"
+    due_date: "2026-05-02"
+    description: "Ciclo de vida completo de tenant: registro, onboarding, planos, uso e suspensão"
+
+issues:
+  - title: "Modelagem de dados de tenant e usuários"
+    body: |
+      Criar tabelas tenants, tenant_users e tenant_settings com todos os campos necessários.
+      Referência: Roadmap Fase 3, seção 3.1
+    tasks:
+      - "Criar model e migration da tabela tenants com todos os campos (status, plan_id, chatwoot_inbox_id, etc.)"
+      - "Criar model e migration da tabela tenant_users (suporte a múltiplos staff por tenant)"
+      - "Criar model e migration da tabela tenant_settings (key-value para configurações)"
+      - "Implementar cache de tenant_settings no Redis com TTL configurável"
+      - "Criar índices: (chatwoot_inbox_id), (slug), (email) na tabela tenants"
+    labels:
+      - database
+      - multitenancy
+    milestone: "M3 — Core Multi-Tenant Completo"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar planos de assinatura e feature gating"
+    body: |
+      Criar tabelas subscription_plans e plan_features e implementar o serviço de verificação de funcionalidades por plano.
+      Referência: Roadmap Fase 3, seção 3.2
+    tasks:
+      - "Criar model e migration da tabela subscription_plans"
+      - "Criar model e migration da tabela plan_features (chave-valor de limites e capacidades)"
+      - "Criar planos padrão: starter, professional, clinic"
+      - "Seed dos planos e features no banco de dados"
+      - "Implementar PlanFeatureService: check_feature(tenant_id, feature_key)"
+      - "Cachear resultados de feature check no Redis (invalidar em mudança de plano)"
+    labels:
+      - billing
+      - multitenancy
+    milestone: "M3 — Core Multi-Tenant Completo"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar fluxo de onboarding de tenant"
+    body: |
+      Construir o fluxo completo e transacional de registro e provisionamento de novo nutricionista.
+      Referência: Roadmap Fase 3, seção 3.3
+    tasks:
+      - "Implementar POST /tenants/register (valida unicidade de e-mail, cria tenant + usuário em transação)"
+      - "Implementar TenantProvisioningService com etapas atômicas e idempotentes"
+      - "Publicar evento tenant.provisioning.requested no RabbitMQ após registro"
+      - "Implementar worker assíncrono de provisionamento: cria account + inbox no Chatwoot via API"
+      - "Atualizar registro do tenant com chatwoot_account_id e chatwoot_inbox_id"
+      - "Seed de configurações padrão do tenant após provisionamento"
+      - "Disparar workflow de boas-vindas no n8n após provisionamento concluído"
+      - "Enviar e-mail de boas-vindas ao nutricionista"
+    labels:
+      - multitenancy
+      - backend
+    milestone: "M3 — Core Multi-Tenant Completo"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar ciclo de vida do tenant (suspensão, reativação, trial, cancelamento)"
+    body: |
+      Criar todos os fluxos de mudança de estado do tenant com notificações e invalidação de cache.
+      Referência: Roadmap Fase 3, seção 3.4
+    tasks:
+      - "Implementar fluxo de suspensão: atualizar status, invalidar cache, enviar e-mail"
+      - "Implementar fluxo de reativação: atualizar status, limpar cache, enviar e-mail"
+      - "Implementar job diário de expiração de trial"
+      - "Enviar e-mails de aviso de expiração: 7 dias, 3 dias, 1 dia antes"
+      - "Implementar fluxo de cancelamento com soft-delete e retenção de 30 dias"
+      - "Implementar job de purga de dados após período de retenção"
+      - "Desativar inbox do Chatwoot no cancelamento (não deletar)"
+    labels:
+      - multitenancy
+      - backend
+    milestone: "M3 — Core Multi-Tenant Completo"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar rastreamento e enforcement de uso"
+    body: |
+      Construir sistema de tracking de métricas de uso por tenant com enforcement de limites por plano.
+      Referência: Roadmap Fase 3, seção 3.5
+    tasks:
+      - "Criar model e migration da tabela usage_records"
+      - "Implementar UsageTrackingService: increment() via Redis INCR atômico"
+      - "Flush periódico de contadores Redis para PostgreSQL a cada 5 minutos (background task)"
+      - "Implementar check_limit(tenant_id, metric_key) com retorno de (current, limit, within_limit)"
+      - "Implementar middleware de enforcement: bloquear com 429 ao exceder limites"
+      - "Rastrear métricas: messages_sent, messages_received, active_clients, appointments_scheduled, campaigns_sent, files_stored_mb"
+    labels:
+      - multitenancy
+      - billing
+    milestone: "M3 — Core Multi-Tenant Completo"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar API de painel administrativo da plataforma"
+    body: |
+      Criar endpoints /admin/* para gestão de tenants pela equipe operacional da plataforma.
+      Referência: Roadmap Fase 3, seção 3.6
+    tasks:
+      - "Implementar GET /admin/tenants (listar todos com status e plano)"
+      - "Implementar GET /admin/tenants/{id} (detalhes completos)"
+      - "Implementar POST /admin/tenants/{id}/suspend"
+      - "Implementar POST /admin/tenants/{id}/activate"
+      - "Implementar POST /admin/tenants/{id}/change-plan"
+      - "Implementar GET /admin/usage (métricas globais da plataforma)"
+      - "Proteger todas as rotas /admin/* com role platform_admin"
+    labels:
+      - backend
+      - multitenancy
+    milestone: "M3 — Core Multi-Tenant Completo"
+    assignees:
+      - WMSolutionsTI

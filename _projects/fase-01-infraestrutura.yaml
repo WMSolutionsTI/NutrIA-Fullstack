@@ -1,0 +1,262 @@
+# fase-01-infraestrutura.yaml
+# Fase 1 — Infraestrutura e Configuração de Ambiente
+# Milestone: M1 — Infraestrutura Operacional
+
+owner: WMSolutionsTI
+repo: NutriSaas
+
+project:
+  name: "Fase 01 — Infraestrutura e Configuração de Ambiente"
+
+labels:
+  - name: infrastructure
+    color: "#0052cc"
+    description: "Configuração de infraestrutura e servidores"
+  - name: docker
+    color: "#2496ED"
+    description: "Docker, Docker Compose e containers"
+  - name: security
+    color: "#e11d48"
+    description: "Hardening de segurança e configurações"
+  - name: database
+    color: "#336791"
+    description: "Configuração e tuning de banco de dados"
+  - name: networking
+    color: "#7c3aed"
+    description: "Rede, proxy, tunelamento e DNS"
+  - name: replication
+    color: "#0369a1"
+    description: "Replicação e alta disponibilidade do banco de dados"
+  - name: connection-pooling
+    color: "#4f46e5"
+    description: "PgBouncer e gestão de conexões"
+
+milestones:
+  - title: "M1 — Infraestrutura Operacional"
+    due_date: "2026-04-04"
+    description: "Todos os serviços containerizados, VPS ativo, Cloudflare Tunnel funcionando"
+
+issues:
+  - title: "Criar docker-compose.yml para desenvolvimento local"
+    body: |
+      Escrever o docker-compose.yml completo para ambiente de desenvolvimento com todos os serviços necessários.
+      Referência: Roadmap Fase 1, seção 1.1
+    tasks:
+      - "Adicionar serviço api (FastAPI)"
+      - "Adicionar serviço worker (RabbitMQ consumer)"
+      - "Adicionar serviço rabbitmq com management plugin"
+      - "Adicionar serviço postgres"
+      - "Adicionar serviço redis"
+      - "Adicionar serviço minio"
+      - "Adicionar serviço n8n"
+      - "Adicionar serviços chatwoot-web, chatwoot-worker, chatwoot-postgres, chatwoot-redis"
+      - "Adicionar serviço frontend (Next.js)"
+      - "Adicionar serviço nginx"
+      - "Definir redes saas-internal e chatwoot-internal"
+      - "Configurar volumes persistentes para todos os serviços stateful"
+      - "Configurar health checks para todos os containers"
+      - "Garantir startup order com depends_on e healthcheck conditions"
+      - "Criar docker-compose.override.yml para overrides locais de desenvolvedor"
+    labels:
+      - docker
+      - infrastructure
+    milestone: "M1 — Infraestrutura Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Criar docker-compose.prod.yml para produção"
+    body: |
+      Criar configuração Docker Compose separada para produção com resource limits e restart policies.
+      Referência: Roadmap Fase 1, seção 1.2
+    tasks:
+      - "Remover volume source mounts (buildar código nas imagens)"
+      - "Definir mem_limit e cpus para cada container"
+      - "Configurar restart: unless-stopped em todos os serviços"
+      - "Configurar injeção de variáveis de ambiente de produção"
+      - "Documentar alocação de RAM e CPU por serviço para o VPS"
+      - "Escrever runbook de primeiro deploy em VPS zerado"
+    labels:
+      - docker
+      - infrastructure
+    milestone: "M1 — Infraestrutura Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Provisionar e configurar VPS Contabo"
+    body: |
+      Setup inicial do servidor Contabo: hardening, software base, limites de sistema.
+      Referência: Roadmap Fase 1, seção 1.3
+    tasks:
+      - "Provisionar VPS Contabo com Ubuntu 22.04 LTS"
+      - "Criar usuário de deploy não-root com sudo"
+      - "Desabilitar login root por SSH"
+      - "Configurar autenticação por chave SSH (desabilitar senha)"
+      - "Configurar UFW: permitir SSH(22), HTTP(80), HTTPS(443), bloquear resto"
+      - "Instalar e configurar fail2ban"
+      - "Habilitar atualizações de segurança automáticas"
+      - "Instalar Docker Engine, Docker Compose v2, Git, Make"
+      - "Configurar swap de 4GB+"
+      - "Ajustar ulimits e parâmetros de kernel para alta concorrência"
+    labels:
+      - infrastructure
+      - security
+    milestone: "M1 — Infraestrutura Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Configurar Cloudflare Tunnel (Cloudflared)"
+    body: |
+      Instalar e configurar cloudflared para expor os serviços com TLS sem abrir portas no VPS.
+      Referência: Roadmap Fase 1, seção 1.4
+    tasks:
+      - "Criar conta Cloudflare e adicionar domínio do projeto"
+      - "Instalar cloudflared como container no docker-compose"
+      - "Configurar rota: api.dominio.com → API FastAPI (porta 8000)"
+      - "Configurar rota: app.dominio.com → Frontend Next.js (porta 3000)"
+      - "Configurar rota: chat.dominio.com → Chatwoot (porta 3000)"
+      - "Configurar rota: n8n.dominio.com → n8n (porta 5678) — acesso restrito"
+      - "Configurar rota: minio.dominio.com → MinIO console (porta 9001) — acesso restrito"
+      - "Configurar rota: rabbit.dominio.com → RabbitMQ management (porta 15672) — acesso restrito"
+      - "Habilitar Cloudflare Access (Zero Trust) nas rotas admin"
+      - "Habilitar proteção DDoS e rate limiting no nível DNS"
+      - "Verificar TLS em todos os subdomínios"
+    labels:
+      - networking
+      - security
+    milestone: "M1 — Infraestrutura Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Configurar PostgreSQL"
+    body: |
+      Setup completo do PostgreSQL: databases, usuários, tuning de performance e backup automático.
+      Referência: Roadmap Fase 1, seção 1.5
+    tasks:
+      - "Configurar PostgreSQL com credenciais seguras de superusuário"
+      - "Criar database nutrisaas"
+      - "Criar database chatwoot (isolado)"
+      - "Criar usuário nutrisaas_app com privilégios mínimos (sem DDL)"
+      - "Tunar postgresql.conf: shared_buffers, work_mem, max_connections, wal_level"
+      - "Habilitar wal_level = replica para suporte futuro a streaming replication"
+      - "Criar usuário replicator com privilégio REPLICATION"
+      - "Documentar tamanho estimado de cada tabela para planejar particionamento"
+      - "Configurar backup diário automatizado com pg_dump"
+      - "Configurar sincronização de backups para bucket MinIO db-backups"
+      - "Documentar e testar procedimento de restore"
+    labels:
+      - database
+      - infrastructure
+    milestone: "M1 — Infraestrutura Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Configurar RabbitMQ"
+    body: |
+      Setup do RabbitMQ com virtual host, credenciais seguras, persistência e resource limits.
+      Referência: Roadmap Fase 1, seção 1.6
+    tasks:
+      - "Habilitar management plugin"
+      - "Substituir usuário admin padrão por credenciais seguras"
+      - "Criar virtual host /nutrisaas"
+      - "Documentar topologia completa de exchanges e filas (a ser implementada na Fase 5)"
+      - "Configurar durable: true em todos os exchanges e filas de produção"
+      - "Configurar delivery_mode: 2 para persistência de mensagens"
+      - "Configurar memory high watermark em 60% da RAM do container"
+      - "Configurar disk free limit de 1GB mínimo"
+    labels:
+      - infrastructure
+    milestone: "M1 — Infraestrutura Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Configurar MinIO"
+    body: |
+      Deploy do MinIO em modo standalone com buckets e políticas de acesso configurados.
+      Referência: Roadmap Fase 1, seção 1.7
+    tasks:
+      - "Deploy MinIO standalone"
+      - "Criar bucket tenant-files (privado)"
+      - "Criar bucket message-attachments (privado)"
+      - "Criar bucket system-exports (privado)"
+      - "Criar bucket db-backups (privado)"
+      - "Configurar políticas de acesso: todos os buckets privados (pre-signed URL only)"
+      - "Criar access key/secret de aplicação com política de privilégio mínimo"
+    labels:
+      - infrastructure
+    milestone: "M1 — Infraestrutura Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Configurar Redis"
+    body: |
+      Deploy do Redis com autenticação, persistência, namespaces definidos e maxmemory configurado.
+      Referência: Roadmap Fase 1, seção 1.8
+    tasks:
+      - "Deploy Redis 7.x com autenticação por senha"
+      - "Definir namespaces: cache:*, session:*, ratelimit:*, lock:*, tenant:config:*"
+      - "Habilitar AOF (Append-Only File) para durabilidade"
+      - "Configurar RDB snapshots a cada 15 minutos"
+      - "Configurar maxmemory e política allkeys-lru"
+    labels:
+      - infrastructure
+    milestone: "M1 — Infraestrutura Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Configurar Chatwoot"
+    body: |
+      Deploy e configuração inicial do Chatwoot com superadmin, SMTP e webhook configurados.
+      Referência: Roadmap Fase 1, seção 1.9
+    tasks:
+      - "Deploy Chatwoot com Docker (setup oficial)"
+      - "Executar migrations e seed do banco Chatwoot"
+      - "Criar conta superadmin do Chatwoot"
+      - "Configurar SMTP para canal de e-mail"
+      - "Configurar webhook global: URL, eventos (message_created, conversation_created, conversation_updated, contact_updated)"
+      - "Verificar acesso em https://chat.dominio.com"
+      - "Documentar estratégia de gestão de API tokens por tenant"
+    labels:
+      - infrastructure
+      - networking
+    milestone: "M1 — Infraestrutura Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Configurar PostgreSQL Read Replica (streaming replication)"
+    body: |
+      Implementar replicação em streaming do PostgreSQL para suportar separação de leitura e escrita e aumentar a disponibilidade.
+      Referência: Roadmap Fase 1, seção de alta disponibilidade de banco de dados
+    tasks:
+      - "Adicionar serviço postgres-replica no docker-compose com POSTGRES_REPLICATION configurado"
+      - "Configurar wal_level = replica, max_wal_senders = 3, wal_keep_size = 64MB no postgres primário"
+      - "Criar usuário replicator com privilégio REPLICATION no postgres primário"
+      - "Configurar pg_hba.conf para permitir conexão do replica"
+      - "Testar replicação: inserir dado no primário e verificar na réplica em tempo real"
+      - "Documentar variáveis de ambiente: DATABASE_URL (write) e DATABASE_READ_URL (read)"
+      - "Adicionar health check para o postgres-replica no docker-compose"
+    labels:
+      - database
+      - infrastructure
+      - replication
+    milestone: "M1 — Infraestrutura Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Configurar PgBouncer para connection pooling"
+    body: |
+      Adicionar PgBouncer como camada de pooling de conexões à frente do PostgreSQL primário para evitar travamentos com muitas conexões simultâneas.
+      Referência: Roadmap Fase 1, seção de connection pooling
+    tasks:
+      - "Adicionar serviço pgbouncer no docker-compose apontando para o postgres primário"
+      - "Configurar pool_mode = transaction para máxima eficiência"
+      - "Configurar max_client_conn = 500 e default_pool_size = 20"
+      - "Atualizar DATABASE_URL da API para apontar para PgBouncer em vez do Postgres direto"
+      - "Documentar o que é connection pooling e por que ele evita travamentos"
+      - "Testar com 100 conexões simultâneas e verificar que não ocorre 'too many connections'"
+    labels:
+      - database
+      - infrastructure
+      - connection-pooling
+    milestone: "M1 — Infraestrutura Operacional"
+    assignees:
+      - WMSolutionsTI

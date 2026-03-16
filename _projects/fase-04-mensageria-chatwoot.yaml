@@ -1,0 +1,155 @@
+# fase-04-mensageria-chatwoot.yaml
+# Fase 4 — Arquitetura de Mensageria e Integração Chatwoot
+# Milestone: M4 — Pipeline de Mensageria Operacional
+
+owner: WMSolutionsTI
+repo: NutriSaas
+
+project:
+  name: "Fase 04 — Arquitetura de Mensageria e Integração Chatwoot"
+
+labels:
+  - name: messaging
+    color: "#FF6600"
+    description: "Arquitetura de mensageria, webhooks e processamento de mensagens"
+  - name: chatwoot
+    color: "#1F93FF"
+    description: "Integração com Chatwoot API e webhooks"
+  - name: backend
+    color: "#009688"
+    description: "Desenvolvimento do backend FastAPI"
+  - name: security
+    color: "#e11d48"
+    description: "Segurança de webhooks e verificação de assinatura"
+  - name: database
+    color: "#336791"
+    description: "Models e migrations"
+  - name: feature
+    color: "#22c55e"
+    description: "Nova funcionalidade"
+  - name: ai-agent
+    color: "#8b5cf6"
+    description: "Agente de IA secretária virtual e controle de automação"
+  - name: api
+    color: "#0ea5e9"
+    description: "Endpoints de API REST"
+
+milestones:
+  - title: "M4 — Pipeline de Mensageria Operacional"
+    due_date: "2026-05-16"
+    description: "Webhook Chatwoot → fila → tenant resolvido, CRM de clientes sincronizado"
+
+issues:
+  - title: "Implementar receptor de webhook do Chatwoot"
+    body: |
+      Criar o endpoint POST /webhooks/chatwoot com verificação de assinatura, resolução de tenant e publicação na fila.
+      Referência: Roadmap Fase 4, seção 4.1
+    tasks:
+      - "Implementar POST /webhooks/chatwoot (público, sem JWT)"
+      - "Implementar verificação de assinatura HMAC-SHA256 com hmac.compare_digest"
+      - "Rejeitar requisições com assinatura inválida → 401"
+      - "Retornar 200 OK imediatamente após validação (sem processamento inline)"
+      - "Extrair inbox_id do payload e resolver tenant_id"
+      - "Cachear mapeamento inbox_id → tenant_id no Redis (TTL 5 min)"
+      - "Publicar evento no RabbitMQ de forma assíncrona"
+      - "Implementar idempotência por event_id: checar e gravar em Redis (TTL 24h)"
+      - "Rotear eventos por tipo: message_created, conversation_created, conversation_updated, contact_updated"
+    labels:
+      - messaging
+      - chatwoot
+      - security
+    milestone: "M4 — Pipeline de Mensageria Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar cliente da API Chatwoot"
+    body: |
+      Construir o ChatwootAPIClient assíncrono com retry automático e gestão de tokens por tenant.
+      Referência: Roadmap Fase 4, seção 4.2
+    tasks:
+      - "Criar ChatwootAPIClient com httpx assíncrono"
+      - "Gerenciar token de API por tenant (buscar da tabela tenants)"
+      - "Implementar retry com backoff exponencial em erros 5xx (máximo 3 tentativas)"
+      - "Implementar create_account(), create_inbox()"
+      - "Implementar send_message() com suporte a anexos"
+      - "Implementar get_conversation(), get_contact()"
+      - "Implementar update_conversation_status(), add_conversation_label(), assign_conversation()"
+      - "Implementar create_contact()"
+      - "Tratar erros: 401, 404, 429 (rate limit com back-off), 500+"
+      - "Logar todas as requisições/respostas com contexto de tenant_id"
+    labels:
+      - chatwoot
+      - backend
+    milestone: "M4 — Pipeline de Mensageria Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Criar models e migrations de mensageria (clients, conversations, messages)"
+    body: |
+      Modelar as tabelas de CRM: clients, conversations e messages com todos os campos e índices necessários.
+      Referência: Roadmap Fase 4, seção 4.3
+    tasks:
+      - "Criar model e migration da tabela clients (tenant-scoped)"
+      - "Criar índices em clients: (tenant_id, chatwoot_contact_id), (tenant_id, phone), (tenant_id, email)"
+      - "Criar model e migration da tabela conversations (tenant-scoped)"
+      - "Criar model e migration da tabela messages (tenant-scoped)"
+      - "Implementar ClientSyncService: auto-criar cliente em mensagem de novo contato"
+      - "Implementar lógica de merge para contatos duplicados (mesmo telefone)"
+      - "Sincronizar atualizações de contato do Chatwoot para tabela clients"
+    labels:
+      - database
+      - messaging
+    milestone: "M4 — Pipeline de Mensageria Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "Implementar pipeline completo de processamento de mensagens inbound"
+    body: |
+      Definir e implementar o fluxo end-to-end desde o webhook até a avaliação de regras de automação.
+      Referência: Roadmap Fase 4, seção 4.4
+    tasks:
+      - "Documentar e implementar o fluxo completo de 11 etapas de processamento"
+      - "Implementar AutomationRuleEngine para avaliar regras por tenant em cada mensagem"
+      - "Criar model e migration da tabela automation_rules"
+      - "Suportar condições: keyword match, status de conversa, tag de cliente, canal, horário"
+      - "Suportar ações: acionar webhook n8n, enviar resposta, atribuir agente, adicionar label, agendar follow-up"
+    labels:
+      - messaging
+      - backend
+    milestone: "M4 — Pipeline de Mensageria Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[FEATURE] Flag de controle do agente de IA por contato no Chatwoot"
+    body: |
+      Implementar campo `ai_agent_enabled` (boolean, default: true) por contato/conversa no Chatwoot.
+
+      Quando `false`:
+      - O worker de mensageria NÃO processa a mensagem via IA
+      - A conversa fica disponível para atendimento humano no painel Chatwoot
+
+      Quando reativado:
+      - Enviar mensagem padrão ao cliente informando retomada do atendimento automático
+      - Registrar log da intervenção humana
+    labels:
+      - feature
+      - chatwoot
+      - ai-agent
+    milestone: "M4 — Pipeline de Mensageria Operacional"
+    assignees:
+      - WMSolutionsTI
+
+  - title: "[FEATURE] Endpoint de toggle AI agent por conversa"
+    body: |
+      `PATCH /api/v1/conversations/{conversation_id}/ai-agent`
+      Body: `{ "enabled": true/false, "reason": "string" }`
+      - Persiste no banco
+      - Publica evento no RabbitMQ para os workers
+      - Registra em audit log
+    labels:
+      - feature
+      - backend
+      - api
+    milestone: "M4 — Pipeline de Mensageria Operacional"
+    assignees:
+      - WMSolutionsTI
