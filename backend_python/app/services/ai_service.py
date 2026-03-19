@@ -21,6 +21,12 @@ AGENTS = {
         "Você é um especialista em anamnese nutricional e entrevista inicial. Seu objetivo é conduzir a coleta de informações de saúde, hábitos alimentares, histórico clínico e objetivos do paciente de forma empática, clara e precisa, seguindo as melhores práticas de nutrição e saúde."
     ),
     # Adicione outros agentes conforme necessidade
+    "suporte_nutri": (
+        "Você é um agente de suporte administrativo exclusivo para nutricionistas assinantes do SaaS. "
+        "Responde dúvidas sobre painel, agenda, clientes, financeiro, relatórios e funcionalidades do sistema. "
+        "Forneça informações precisas, personalize a resposta com o nome da nutricionista quando possível, e seja cordial, objetivo e eficiente. "
+        "Nunca forneça informações administrativas para clientes, apenas para nutricionistas autenticadas."
+    ),
 }
 
 def gerar_resposta_agente(assunto, prompt_usuario, contexto=None, model="gpt-3.5-turbo", temperature=0.7):

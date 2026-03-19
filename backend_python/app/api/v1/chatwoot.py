@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from app.models.cliente import Cliente
 from app.database import get_db
+from app.domain.models.caixa_de_entrada import CaixaDeEntrada
+from app.domain.models.nutricionista import Nutricionista
 
 router = APIRouter()
 
@@ -27,6 +29,7 @@ from app.workers.quebrar_enviar_mensagens_worker import enviar_mensagens
 from app.domain.models.tenant import Tenant
 from sqlalchemy.orm import Session
 import json
+from app.workers.suporte_nutri_worker import process_comando_chatwoot
 
 @router.post("/chatwoot/webhook")
 async def receber_webhook_chatwoot(request: Request, db: Session = Depends(get_db)):
@@ -42,6 +45,18 @@ async def receber_webhook_chatwoot(request: Request, db: Session = Depends(get_d
     if not tenant:
         return {"error": "Tenant não encontrado", "inbox_id": inbox_id}
 
+    # Identifica o nutricionista pela caixa de entrada
+    caixa = db.query(CaixaDeEntrada).filter(CaixaDeEntrada.identificador_chatwoot == inbox_id).first()
+    nutri = caixa.nutricionista if caixa else None
+
+    # Verifica tipo_user antes de responder
+    if nutri and nutri.tipo_user == "nutri" and message:
+        from app.workers.suporte_nutri_worker import process_comando_chatwoot
+        process_comando_chatwoot(account_id, conversation_id, message.strip().lower(), nutri.id, db)
+        return {"status": "comando_processado", "nutricionista": nutri.nome, "tenant": tenant.nome}
+    elif nutri and nutri.tipo_user != "nutri":
+        return {"status": "acesso_negado", "motivo": "Usuário não autorizado para informações exclusivas"}
+
     # Lógica de decisão: exemplo simplificado
     if "responder" in message:
         # Responde diretamente via Chatwoot
@@ -51,6 +66,13 @@ async def receber_webhook_chatwoot(request: Request, db: Session = Depends(get_d
         # Executa ação local (mock)
         resultado = {"acao": "executada", "tenant": tenant.nome}
         return {"status": "executado", "resultado": resultado}
+    elif nutri and nutri.tipo_user == "cliente" and message:
+        # Suporte ao cliente: responder dúvidas, pagamentos, agenda, follow-ups
+        resposta = "Olá! Você está falando com a equipe da nutricionista {}. Como posso ajudar?".format(nutri.nome)
+        # Aqui pode-se expandir para lógica de atendimento ao cliente
+        from app.workers.quebrar_enviar_mensagens_worker import enviar_mensagens
+        enviar_mensagens(account_id, conversation_id, [resposta])
+        return {"status": "suporte_cliente", "cliente": nutri.nome, "tenant": tenant.nome}
     else:
         # Envia para fila RabbitMQ para processamento por worker
         send_message(json.dumps({"tenant_id": tenant.id, "conversation_id": conversation_id, "message": message}))
