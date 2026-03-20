@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
+
 from app.domain.models.base import Base
+
 
 class Nutricionista(Base):
     __tablename__ = "nutricionistas"
@@ -15,4 +17,20 @@ class Nutricionista(Base):
     caixas_de_entrada = relationship("CaixaDeEntrada", back_populates="nutricionista")
     permissoes = Column(String)  # JSON string or dict
     auditoria = Column(String)
-    tipo_user = Column(String, default="nutri")  # 'nutri' ou 'cliente'    papel = Column(String, default="nutri")  # 'admin', 'nutri', 'secretaria'    contexto_ia = Column(String)  # JSON string ou dict com planos, horários, especialidade, etc
+    tipo_user = Column(String, default="nutri")  # 'admin', 'nutri', 'secretaria'
+
+    @property
+    def papel(self) -> str:
+        return self.tipo_user or "nutri"
+
+    @papel.setter
+    def papel(self, value: str) -> None:
+        self.tipo_user = value
+
+    @property
+    def contexto_ia(self) -> str | None:
+        return self.auditoria
+
+    @contexto_ia.setter
+    def contexto_ia(self, value: str | None) -> None:
+        self.auditoria = value

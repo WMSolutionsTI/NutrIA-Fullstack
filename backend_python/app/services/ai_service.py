@@ -33,8 +33,7 @@ def gerar_resposta_agente(assunto, prompt_usuario, contexto=None, model="gpt-3.5
     """
     Gera resposta usando OpenAI, especializando o agente conforme assunto.
     """
-    import os
-    if os.getenv("TEST_ENV", "0") == "1":
+    if os.getenv("TEST_ENV", "0") == "1" or not OPENAI_API_KEY:
         # Mock response for tests
         return f"[Mocked resposta para agente '{assunto}']"
     system_prompt = AGENTS.get(assunto, "Você é um assistente especializado.")

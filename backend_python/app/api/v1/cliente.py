@@ -7,11 +7,38 @@ from app.api.v1.auth import get_current_user
 
 router = APIRouter(prefix="/clientes", tags=["Clientes"])
 
-@router.post("/{cliente_id}/relacionamento_satisfeito", response_model=dict)
-def relacionamento_cliente_satisfeito(cliente_id: int, db: Session = Depends(get_db)):
+
+def _get_cliente_or_404(db: Session, cliente_id: int) -> Cliente:
     cliente = db.query(Cliente).get(cliente_id)
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    return cliente
+
+
+def _ensure_can_access_cliente(
+    cliente: Cliente, current_user: Nutricionista, db: Session
+) -> None:
+    if current_user.papel == "admin":
+        return
+
+    if cliente.nutricionista_id == current_user.id:
+        return
+
+    if current_user.tenant_id:
+        nutri_dono = db.query(Nutricionista).get(cliente.nutricionista_id)
+        if nutri_dono and nutri_dono.tenant_id == current_user.tenant_id:
+            return
+
+    raise HTTPException(status_code=403, detail="Acesso negado")
+
+@router.post("/{cliente_id}/relacionamento_satisfeito", response_model=dict)
+def relacionamento_cliente_satisfeito(
+    cliente_id: int,
+    db: Session = Depends(get_db),
+    current_user: Nutricionista = Depends(get_current_user),
+):
+    cliente = _get_cliente_or_404(db, cliente_id)
+    _ensure_can_access_cliente(cliente, current_user, db)
     if cliente.status != "cliente_satisfeito":
         raise HTTPException(status_code=400, detail="Cliente não está satisfeito")
     nutri = db.query(Nutricionista).get(cliente.nutricionista_id)
@@ -26,10 +53,13 @@ def relacionamento_cliente_satisfeito(cliente_id: int, db: Session = Depends(get
     return {"id": cliente.id, "status": cliente.status, "relacionamento": relacionamento, "contexto_nutri": contexto}
 
 @router.post("/{cliente_id}/recuperar", response_model=dict)
-def recuperar_cliente_inativo(cliente_id: int, db: Session = Depends(get_db)):
-    cliente = db.query(Cliente).get(cliente_id)
-    if not cliente:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+def recuperar_cliente_inativo(
+    cliente_id: int,
+    db: Session = Depends(get_db),
+    current_user: Nutricionista = Depends(get_current_user),
+):
+    cliente = _get_cliente_or_404(db, cliente_id)
+    _ensure_can_access_cliente(cliente, current_user, db)
     if cliente.status != "cliente_inativo":
         raise HTTPException(status_code=400, detail="Cliente não está inativo")
     nutri = db.query(Nutricionista).get(cliente.nutricionista_id)
@@ -44,10 +74,13 @@ def recuperar_cliente_inativo(cliente_id: int, db: Session = Depends(get_db)):
     return {"id": cliente.id, "status": cliente.status, "estrategias": estrategias, "contexto_nutri": contexto}
 
 @router.post("/{cliente_id}/atendimento_completo", response_model=dict)
-def atendimento_completo_cliente(cliente_id: int, db: Session = Depends(get_db)):
-    cliente = db.query(Cliente).get(cliente_id)
-    if not cliente:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+def atendimento_completo_cliente(
+    cliente_id: int,
+    db: Session = Depends(get_db),
+    current_user: Nutricionista = Depends(get_current_user),
+):
+    cliente = _get_cliente_or_404(db, cliente_id)
+    _ensure_can_access_cliente(cliente, current_user, db)
     if cliente.status != "cliente_ativo":
         raise HTTPException(status_code=400, detail="Cliente não está ativo")
     nutri = db.query(Nutricionista).get(cliente.nutricionista_id)
@@ -63,10 +96,13 @@ def atendimento_completo_cliente(cliente_id: int, db: Session = Depends(get_db))
     return {"id": cliente.id, "status": cliente.status, "atendimento": atendimento}
 
 @router.put("/{cliente_id}/ativar", response_model=dict)
-def ativar_cliente(cliente_id: int, db: Session = Depends(get_db)):
-    cliente = db.query(Cliente).get(cliente_id)
-    if not cliente:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+def ativar_cliente(
+    cliente_id: int,
+    db: Session = Depends(get_db),
+    current_user: Nutricionista = Depends(get_current_user),
+):
+    cliente = _get_cliente_or_404(db, cliente_id)
+    _ensure_can_access_cliente(cliente, current_user, db)
     cliente.status = "cliente_ativo"
     db.commit()
     db.refresh(cliente)
@@ -77,7 +113,10 @@ def list_clientes(db: Session = Depends(get_db), current_user: Nutricionista = D
     # Apenas admin/nutri podem listar todos clientes, secretária lista restrito
     if current_user.papel not in ["admin", "nutri", "secretaria"]:
         raise HTTPException(status_code=403, detail="Acesso negado")
-    return db.query(Cliente).all()
+    query = db.query(Cliente)
+    if current_user.papel != "admin":
+        query = query.filter(Cliente.nutricionista_id == current_user.id)
+    return query.all()
 
 @router.post("/", response_model=dict)
 def create_cliente(cliente: dict, db: Session = Depends(get_db), current_user: Nutricionista = Depends(get_current_user)):
@@ -92,17 +131,24 @@ def create_cliente(cliente: dict, db: Session = Depends(get_db), current_user: N
     return {"id": new_cliente.id}
 
 @router.get("/{cliente_id}", response_model=dict)
-def get_cliente(cliente_id: int, db: Session = Depends(get_db)):
-    cliente = db.query(Cliente).get(cliente_id)
-    if not cliente:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+def get_cliente(
+    cliente_id: int,
+    db: Session = Depends(get_db),
+    current_user: Nutricionista = Depends(get_current_user),
+):
+    cliente = _get_cliente_or_404(db, cliente_id)
+    _ensure_can_access_cliente(cliente, current_user, db)
     return cliente.__dict__
 
 @router.put("/{cliente_id}", response_model=dict)
-def update_cliente(cliente_id: int, cliente_data: dict, db: Session = Depends(get_db)):
-    cliente = db.query(Cliente).get(cliente_id)
-    if not cliente:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+def update_cliente(
+    cliente_id: int,
+    cliente_data: dict,
+    db: Session = Depends(get_db),
+    current_user: Nutricionista = Depends(get_current_user),
+):
+    cliente = _get_cliente_or_404(db, cliente_id)
+    _ensure_can_access_cliente(cliente, current_user, db)
     for k, v in cliente_data.items():
         setattr(cliente, k, v)
     db.commit()
@@ -110,22 +156,38 @@ def update_cliente(cliente_id: int, cliente_data: dict, db: Session = Depends(ge
     return cliente.__dict__
 
 @router.delete("/{cliente_id}", response_model=dict)
-def delete_cliente(cliente_id: int, db: Session = Depends(get_db)):
-    cliente = db.query(Cliente).get(cliente_id)
-    if not cliente:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+def delete_cliente(
+    cliente_id: int,
+    db: Session = Depends(get_db),
+    current_user: Nutricionista = Depends(get_current_user),
+):
+    cliente = _get_cliente_or_404(db, cliente_id)
+    _ensure_can_access_cliente(cliente, current_user, db)
     db.delete(cliente)
     db.commit()
     return {"status": "deleted"}
 
 @router.post("/vincular", response_model=dict)
-def vincular_cliente(contato_chatwoot: str, nutricionista_id: int, db: Session = Depends(get_db)):
+def vincular_cliente(
+    contato_chatwoot: str,
+    nutricionista_id: int,
+    db: Session = Depends(get_db),
+    current_user: Nutricionista = Depends(get_current_user),
+):
+    if current_user.papel != "admin" and nutricionista_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
     cliente = db.query(Cliente).filter_by(contato_chatwoot=contato_chatwoot).first()
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
     nutri = db.query(Nutricionista).get(nutricionista_id)
     if not nutri:
         raise HTTPException(status_code=404, detail="Nutricionista não encontrado")
+    if (
+        current_user.papel != "admin"
+        and current_user.tenant_id
+        and nutri.tenant_id != current_user.tenant_id
+    ):
+        raise HTTPException(status_code=403, detail="Tenant inválido")
     cliente.nutricionista_id = nutricionista_id
     db.commit()
     db.refresh(cliente)
