@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from app.domain.models.nutricionista import Nutricionista
 from app.domain.models.tenant import Tenant
 from app.domain.models.caixa_de_entrada import CaixaDeEntrada
 from app.db import get_db
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 router = APIRouter(prefix="/nutricionistas", tags=["Nutricionistas"])
 
@@ -43,6 +46,16 @@ def list_nutricionistas(db: Session = Depends(get_db)):
 
 @router.post("/", response_model=dict)
 def create_nutricionista(nutri: dict, db: Session = Depends(get_db)):
+    existing = db.query(Nutricionista).filter(Nutricionista.email == nutri.get("email")).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="E-mail já cadastrado")
+    plain_password = nutri.get("password")
+    if not plain_password:
+        raise HTTPException(status_code=400, detail="Senha é obrigatória")
+    password_hash = pwd_context.hash(plain_password)
+    nutri["password_hash"] = password_hash
+    nutri.pop("password", None)
+
     new_nutri = Nutricionista(**nutri)
     db.add(new_nutri)
     db.commit()

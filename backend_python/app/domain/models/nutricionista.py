@@ -7,6 +7,7 @@ class Nutricionista(Base):
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)
     status = Column(String, default="active")
     plano = Column(String, nullable=False)
     tenant_id = Column(Integer, ForeignKey("tenants.id"))
