@@ -1,3 +1,11 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from app.domain.models.cliente import Cliente
+from app.domain.models.nutricionista import Nutricionista
+from app.db import get_db
+
+router = APIRouter(prefix="/clientes", tags=["Clientes"])
+
 @router.post("/{cliente_id}/relacionamento_satisfeito", response_model=dict)
 def relacionamento_cliente_satisfeito(cliente_id: int, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).get(cliente_id)
@@ -7,7 +15,6 @@ def relacionamento_cliente_satisfeito(cliente_id: int, db: Session = Depends(get
         raise HTTPException(status_code=400, detail="Cliente não está satisfeito")
     nutri = db.query(Nutricionista).get(cliente.nutricionista_id)
     contexto = nutri.contexto_ia if nutri else None
-    # Relacionamento e manutenção
     relacionamento = [
         "Envio de novidades",
         "Pesquisa de satisfação",
@@ -16,6 +23,7 @@ def relacionamento_cliente_satisfeito(cliente_id: int, db: Session = Depends(get
         "Disponibilidade para novas necessidades"
     ]
     return {"id": cliente.id, "status": cliente.status, "relacionamento": relacionamento, "contexto_nutri": contexto}
+
 @router.post("/{cliente_id}/recuperar", response_model=dict)
 def recuperar_cliente_inativo(cliente_id: int, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).get(cliente_id)
@@ -25,7 +33,6 @@ def recuperar_cliente_inativo(cliente_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Cliente não está inativo")
     nutri = db.query(Nutricionista).get(cliente.nutricionista_id)
     contexto = nutri.contexto_ia if nutri else None
-    # Estratégias de recuperação
     estrategias = [
         "Mensagem personalizada de reativação",
         "Oferta especial de retorno",
@@ -34,6 +41,7 @@ def recuperar_cliente_inativo(cliente_id: int, db: Session = Depends(get_db)):
         "Promoção exclusiva"
     ]
     return {"id": cliente.id, "status": cliente.status, "estrategias": estrategias, "contexto_nutri": contexto}
+
 @router.post("/{cliente_id}/atendimento_completo", response_model=dict)
 def atendimento_completo_cliente(cliente_id: int, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).get(cliente_id)
@@ -43,7 +51,6 @@ def atendimento_completo_cliente(cliente_id: int, db: Session = Depends(get_db))
         raise HTTPException(status_code=400, detail="Cliente não está ativo")
     nutri = db.query(Nutricionista).get(cliente.nutricionista_id)
     contexto = nutri.contexto_ia if nutri else None
-    # Simulação de atendimento completo
     atendimento = {
         "anamnese": "Realizada",
         "plano_alimentar": "Elaborado",
@@ -53,6 +60,7 @@ def atendimento_completo_cliente(cliente_id: int, db: Session = Depends(get_db))
         "contexto_nutri": contexto
     }
     return {"id": cliente.id, "status": cliente.status, "atendimento": atendimento}
+
 @router.put("/{cliente_id}/ativar", response_model=dict)
 def ativar_cliente(cliente_id: int, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).get(cliente_id)
@@ -62,12 +70,6 @@ def ativar_cliente(cliente_id: int, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(cliente)
     return {"id": cliente.id, "status": cliente.status}
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app.domain.models.cliente import Cliente
-from app.db import get_db
-
-router = APIRouter(prefix="/clientes", tags=["Clientes"])
 
 @router.get("/", response_model=list)
 def list_clientes(db: Session = Depends(get_db)):
@@ -119,25 +121,4 @@ def vincular_cliente(contato_chatwoot: str, nutricionista_id: int, db: Session =
     cliente.nutricionista_id = nutricionista_id
     db.commit()
     db.refresh(cliente)
-    return {"id": cliente.id, "nutricionista_id": nutricionista_id, "status": "vinculado"}
-
-@router.post("/clientes/vincular_chatwoot")
-def vincular_cliente_chatwoot(chatwoot_id: str, db: Session = Depends(get_db)):
-    cliente = db.query(Cliente).filter(Cliente.chatwoot_id == chatwoot_id).first()
-    if not cliente:
-        cliente = Cliente(chatwoot_id=chatwoot_id)
-        db.add(cliente)
-        db.commit()
-        db.refresh(cliente)
-    return cliente
-
-@router.get("/clientes/filtro")
-def filtrar_clientes(status: str = None, nutricionista_id: int = None, tenant_id: int = None, db: Session = Depends(get_db)):
-    query = db.query(Cliente)
-    if status:
-        query = query.filter(Cliente.status == status)
-    if nutricionista_id:
-        query = query.filter(Cliente.nutricionista_id == nutricionista_id)
-    if tenant_id:
-        query = query.join("Nutricionista").filter(Nutricionista.tenant_id == tenant_id)
-    return query.all()
+    return {"status": "ok", "cliente_id": cliente.id, "nutricionista_id": nutricionista_id}

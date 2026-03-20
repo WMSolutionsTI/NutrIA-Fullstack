@@ -1,30 +1,38 @@
 from datetime import datetime, timedelta
+import hashlib
+import hmac
 import os
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.domain.models.nutricionista import Nutricionista
 
+
+class RegisterRequest(BaseModel):
+    username: str
+    email: str
+    password: str
+
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "supersecretkey")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 router = APIRouter()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    digest = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
+    return hmac.compare_digest(digest, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 
 def get_nutricionista_by_email(db: Session, email: str):
@@ -56,12 +64,12 @@ def login_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
 
 
 @router.post("/auth/register")
-def register(username: str, email: str, password: str, db: Session = Depends(get_db)):
-    existing = get_nutricionista_by_email(db, email)
+def register(register_data: RegisterRequest, db: Session = Depends(get_db)):
+    existing = get_nutricionista_by_email(db, register_data.email)
     if existing:
         raise HTTPException(status_code=400, detail="E-mail já cadastrado")
-    hashed_password = get_password_hash(password)
-    new_user = Nutricionista(nome=username, email=email, password_hash=hashed_password, plano="basic")
+    hashed_password = get_password_hash(register_data.password)
+    new_user = Nutricionista(nome=register_data.username, email=register_data.email, password_hash=hashed_password, plano="basic")
     db.add(new_user)
     db.commit()
     db.refresh(new_user)

@@ -4,6 +4,12 @@ from app.domain.models.cliente import Cliente
 from app.db import get_db
 from app.domain.models.caixa_de_entrada import CaixaDeEntrada
 from app.domain.models.nutricionista import Nutricionista
+from app.domain.repositories.tenant_repository import TenantRepository
+from app.workers.rabbitmq_worker import send_message
+from app.workers.quebrar_enviar_mensagens_worker import enviar_mensagens
+from app.workers.suporte_nutri_worker import process_comando_chatwoot
+from app.domain.models.tenant import Tenant
+import json
 
 router = APIRouter()
 
@@ -21,15 +27,6 @@ def vincular_inbox_chatwoot(cliente_id: int, inbox_id: str, db: Session = Depend
 def consultar_mensagens_chatwoot(cliente_id: int, db: Session = Depends(get_db)):
     # Mock: consulta de mensagens
     return {"cliente_id": cliente_id, "mensagens": ["msg1", "msg2"]}
-
-@router.post("/chatwoot/webhook")
-from app.domain.repositories.tenant_repository import TenantRepository
-from app.workers.rabbitmq_worker import send_message
-from app.workers.quebrar_enviar_mensagens_worker import enviar_mensagens
-from app.domain.models.tenant import Tenant
-from sqlalchemy.orm import Session
-import json
-from app.workers.suporte_nutri_worker import process_comando_chatwoot
 
 @router.post("/chatwoot/webhook")
 async def receber_webhook_chatwoot(request: Request, db: Session = Depends(get_db)):
