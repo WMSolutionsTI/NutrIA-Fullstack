@@ -37,6 +37,45 @@ def alternar_modo_conversa(conversa_id: int, modo: str, db: Session = Depends(ge
         raise HTTPException(status_code=400, detail="Modo inválido")
     conversa.modo = modo
     conversa.em_conversa_direta = (modo == "direto")
+    if conversa.cliente_id:
+        cliente = conversa.cliente
+        if cliente:
+            cliente.status = "em_atendimento_direto" if modo == "direto" else "cliente_ativo"
+            db.add(cliente)
+    db.commit()
+    db.refresh(conversa)
+    return {"id": conversa.id, "modo": conversa.modo, "em_conversa_direta": conversa.em_conversa_direta}
+
+@router.post("/conversas/{conversa_id}/abrir")
+def abrir_conversa_direta(conversa_id: int, db: Session = Depends(get_db)):
+    conversa = db.query(Conversa).filter(Conversa.id == conversa_id).first()
+    if not conversa:
+        raise HTTPException(status_code=404, detail="Conversa não encontrada")
+    conversa.modo = "direto"
+    conversa.em_conversa_direta = True
+    if conversa.cliente_id:
+        cliente = conversa.cliente
+        if cliente:
+            cliente.status = "em_atendimento_direto"
+            db.add(cliente)
+    db.add(conversa)
+    db.commit()
+    db.refresh(conversa)
+    return {"id": conversa.id, "modo": conversa.modo, "em_conversa_direta": conversa.em_conversa_direta}
+
+@router.post("/conversas/{conversa_id}/fechar")
+def fechar_conversa_direta(conversa_id: int, db: Session = Depends(get_db)):
+    conversa = db.query(Conversa).filter(Conversa.id == conversa_id).first()
+    if not conversa:
+        raise HTTPException(status_code=404, detail="Conversa não encontrada")
+    conversa.modo = "ia"
+    conversa.em_conversa_direta = False
+    if conversa.cliente_id:
+        cliente = conversa.cliente
+        if cliente:
+            cliente.status = "cliente_ativo"
+            db.add(cliente)
+    db.add(conversa)
     db.commit()
     db.refresh(conversa)
     return {"id": conversa.id, "modo": conversa.modo, "em_conversa_direta": conversa.em_conversa_direta}

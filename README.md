@@ -89,6 +89,17 @@ Cliente → WhatsApp/Telegram/Instagram/E-mail
 - **Redis**: cache, rate limiting, idempotência
 - **MinIO**: armazenamento de arquivos (S3 compatível)
 
+### Fluxo de Escalonamento para Nutricionista (Direto)
+
+- Detecção de pedido de atendimento humano/”sem IA” a partir da mensagem do cliente
+- `POST /api/v1/chatwoot/webhook` coloca o `conversa.modo` em `direto` e `em_conversa_direta = true`
+- `cliente.status` passa para `em_atendimento_direto`
+- notificação enviada para nutricionista (chatwoot link + admin) para atendimento imediato:
+  - link exemplo: `/nutricionista/clientes/{cliente.id}/conversas/{conversation_id}`
+- nutricionista encerra demanda com trigger "encerrar atendimento" e o sistema volta para `modo=ia`
+- `cliente.status` retorna a `cliente_ativo`
+- existe endpoint para controle manual: `POST /api/v1/conversas/conversas/{conversa_id}/abrir` e `/fechar`
+
 ---
 
 ## 📁 Estrutura do Repositório

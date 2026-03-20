@@ -4,12 +4,63 @@ from app.domain.models.cliente import Cliente
 from app.db import get_db
 from app.domain.models.caixa_de_entrada import CaixaDeEntrada
 from app.domain.models.nutricionista import Nutricionista
+from app.domain.models.conversa import Conversa
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.workers.rabbitmq_worker import send_message
 from app.workers.quebrar_enviar_mensagens_worker import enviar_mensagens
+from app.workers.chatwoot_message_worker import enviar_mensagem_chatwoot
+from app.workers.admin_monitor_worker import notificar_admins
 from app.workers.suporte_nutri_worker import process_comando_chatwoot
 from app.domain.models.tenant import Tenant
+from app.core.config import FRONTEND_URL
 import json
+
+
+def is_request_nutricionista(message: str) -> bool:
+    if not message or not isinstance(message, str):
+        return False
+    text = message.lower()
+    triggers = [
+        "falar com nutricionista",
+        "atendimento humano",
+        "atendimento com nutricionista",
+        "quero falar com a nutricionista",
+        "preciso de nutricionista",
+        "urgente nutricionista",
+        "vou falar diretamente com a nutricionista",
+        "não quero ia",
+        "sem ia",
+        "atendimento direto"
+    ]
+    return any(trigger in text for trigger in triggers)
+
+
+def is_finalizar_atendimento(message: str) -> bool:
+    if not message or not isinstance(message, str):
+        return False
+    text = message.lower()
+    triggers = [
+        "encerrar atendimento",
+        "finalizar atendimento",
+        "retornar secretaria",
+        "voltar para secretária",
+        "demanda encerrada",
+        "atendimento finalizado",
+        "liberar secretaria",
+        "retornar ao bot",
+        "voltar para a secretária"
+    ]
+    return any(trigger in text for trigger in triggers)
+
+
+def notificar_nutricionista(cliente, nutricionista, conversation_id):
+    link = f"{FRONTEND_URL}/nutricionista/clientes/{cliente.id}/conversas/{conversation_id}"
+    mensagem = (
+        f"[Escalonamento] Cliente {cliente.nome} (ID {cliente.id}) solicitou falar com nutricionista {nutricionista.nome}. "
+        f"Acompanhe aqui: {link}"
+    )
+    notificar_admins(mensagem)
+    # Também pode estender para envio de notificação por email/sms quando disponível
 
 router = APIRouter()
 
@@ -82,15 +133,81 @@ async def receber_webhook_chatwoot(request: Request, db: Session = Depends(get_d
         db.refresh(cliente)
 
     # Cria conversa inicial para registro permanente
-    from app.domain.models.conversa import Conversa
+    contexto_nutri = getattr(nutri, "contexto_ia", None) if nutri else None
     nova_conversa = Conversa(
         cliente_id=cliente.id,
         nutricionista_id=caixa.nutricionista_id,
         caixa_id=caixa.id,
         mensagem=message or "<sem texto>",
         modo="ia",
-        contexto_ia=nutri.contexto_ia if nutri else None
+        contexto_ia=contexto_nutri,
+        em_conversa_direta=False
     )
+
+    # Verifica última conversa para manter estado de atendimento direto
+    ultima_conversa = db.query(Conversa).filter(Conversa.cliente_id == cliente.id).order_by(Conversa.id.desc()).first()
+    direcao_ativa = bool(ultima_conversa and ultima_conversa.em_conversa_direta)
+
+    # Escalonamento para nutricionista solicitado pelo cliente
+    if is_request_nutricionista(message) and not direcao_ativa:
+        nova_conversa.modo = "direto"
+        nova_conversa.em_conversa_direta = True
+
+        cliente.status = "em_atendimento_direto"
+        db.add(cliente)
+        db.add(nova_conversa)
+        db.commit()
+
+        if nutri:
+            notificar_nutricionista(cliente, nutri, conversation_id)
+
+        enviar_mensagem_chatwoot(account_id, conversation_id, "Sua solicitação foi recebida. Nutricionista será notificada e retornará em breve.")
+        return {
+            "status": "escalado_para_nutricionista",
+            "cliente_id": cliente.id,
+            "conversation_id": conversation_id
+        }
+
+    # Finalização da demanda pela nutricionista/cliente para voltar à secretaria
+    if direcao_ativa and is_finalizar_atendimento(message):
+        nova_conversa.modo = "ia"
+        nova_conversa.em_conversa_direta = False
+
+        cliente.status = "cliente_ativo"
+        db.add(cliente)
+        db.add(nova_conversa)
+        db.commit()
+
+        enviar_mensagem_chatwoot(account_id, conversation_id, "Atendimento nutricionista finalizado; retorno para a secretária iniciando atendimento IA.")
+        send_message("queue.atendimento", json.dumps({
+            "tenant_id": caixa.nutricionista.tenant_id if caixa.nutricionista else None,
+            "conversation_id": conversation_id,
+            "cliente_id": cliente.id,
+            "account_id": account_id,
+            "message": message,
+            "workflow": "ativo"
+        }))
+        return {
+            "status": "retorno_secretaria",
+            "cliente_id": cliente.id,
+            "conversation_id": conversation_id
+        }
+
+    # Se já estiver em atendimento direto, não processe IA, apenas mantenha o estado
+    if direcao_ativa:
+        nova_conversa.modo = "direto"
+        nova_conversa.em_conversa_direta = True
+        db.add(nova_conversa)
+        db.commit()
+
+        enviar_mensagem_chatwoot(account_id, conversation_id, "Atendimento direto ativo. Nutricionista está em contato com você.")
+        return {
+            "status": "atendimento_direto_ativo",
+            "cliente_id": cliente.id,
+            "conversation_id": conversation_id
+        }
+
+    # Workflow IA padrão
     db.add(nova_conversa)
     db.commit()
 

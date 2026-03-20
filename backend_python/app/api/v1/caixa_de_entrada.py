@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.domain.models.caixa_de_entrada import CaixaDeEntrada
 from app.domain.models.nutricionista import Nutricionista
 from app.domain.models.tenant import Tenant
+from app.db import get_db
 
 router = APIRouter(prefix="/caixas", tags=["Caixas de Entrada"])
 

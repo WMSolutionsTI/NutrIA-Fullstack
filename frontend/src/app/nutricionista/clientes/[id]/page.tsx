@@ -78,7 +78,7 @@ export default function ClienteDetalhe({ params }: { params: { id: string } }) {
         </div>
 
         <div className="flex flex-wrap gap-2 mb-4">
-          {["cliente_potencial", "cliente_ativo", "cliente_inativo", "cliente_satisfeito", "nutri"].map(status => (
+          {["cliente_potencial", "cliente_ativo", "cliente_inativo", "cliente_satisfeito", "nutri", "em_atendimento_direto"].map(status => (
             <button
               key={status}
               onClick={() => atualizarStatus(status)}
@@ -102,6 +102,11 @@ export default function ClienteDetalhe({ params }: { params: { id: string } }) {
                   <div className="text-sm text-zinc-500">{new Date(conv.data || Date.now()).toLocaleString()}</div>
                   <div className="text-md">{conv.mensagem}</div>
                   <div className="text-xs text-zinc-400 mt-1">Modo: {conv.modo || "ia"}</div>
+                  <div className="mt-2">
+                    <Link href={`/nutricionista/clientes/${clienteId}/conversas/${conv.id}`} className="text-blue-600 hover:underline text-sm">
+                      Abrir conversa no painel de atendimento
+                    </Link>
+                  </div>
                 </li>
               ))}
             </ul>

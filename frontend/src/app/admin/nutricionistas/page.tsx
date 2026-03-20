@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from "react";
 
 export default function GestaoNutricionistas() {
@@ -17,7 +18,7 @@ export default function GestaoNutricionistas() {
     }
   };
 
-  const alternarStatus = idx => {
+  const alternarStatus = (idx: number) => {
     setNutricionistas(nutricionistas.map((n, i) => i === idx ? { ...n, ativo: !n.ativo } : n));
   };
 

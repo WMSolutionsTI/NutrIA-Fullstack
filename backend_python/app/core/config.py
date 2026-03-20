@@ -15,4 +15,4 @@ MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
 MINIO_BUCKET = os.getenv("MINIO_BUCKET", "nutria-files")
 
 # Configuração de outros serviços
-# ...
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")

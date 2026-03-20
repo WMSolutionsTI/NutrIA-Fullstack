@@ -19,16 +19,16 @@ def enviar_mensagens(account_id, conversation_id, mensagens):
     from app.core.logging import logger
     for msg in mensagens:
         if os.getenv("TEST_ENV", "0") == "1":
-            logger.info("[TEST_ENV] simulando envio de mensagem", extra={"account_id": account_id, "conversation_id": conversation_id, "msg": msg})
+            logger.info("[TEST_ENV] simulando envio de mensagem", extra={"account_id": account_id, "conversation_id": conversation_id, "chatwoot_message": msg})
             continue
         data = {"content": msg}
         try:
             response = requests.post(url, headers=headers, json=data, timeout=5)
             if response.status_code == 200:
-                logger.info(f"Mensagem enviada", extra={"account_id": account_id, "conversation_id": conversation_id, "msg": msg})
+                logger.info("Mensagem enviada", extra={"account_id": account_id, "conversation_id": conversation_id, "chatwoot_message": msg})
             else:
-                logger.error(f"Erro ao enviar mensagem", extra={"account_id": account_id, "conversation_id": conversation_id, "msg": msg, "error": response.text})
+                logger.error("Erro ao enviar mensagem", extra={"account_id": account_id, "conversation_id": conversation_id, "chatwoot_message": msg, "error": response.text})
         except Exception as e:
-            logger.error("Erro ao enviar mensagem (exceção)", extra={"account_id": account_id, "conversation_id": conversation_id, "msg": msg, "error": str(e)})
+            logger.error("Erro ao enviar mensagem (exceção)", extra={"account_id": account_id, "conversation_id": conversation_id, "chatwoot_message": msg, "error": str(e)})
 
 # Worker pode ser chamado por outros workers para enviar mensagens processadas

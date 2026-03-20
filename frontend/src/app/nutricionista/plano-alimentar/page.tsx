@@ -1,4 +1,19 @@
+"use client";
+
 import React, { useState } from "react";
+
+type CalculosNutricionais = {
+  calorias: number;
+  macros: {
+    carbo: number;
+    proteina: number;
+    gordura: number;
+  };
+  micronutrientes: {
+    ferro: number;
+    calcio: number;
+  };
+};
 
 export default function PlanoAlimentar() {
   // Estados para campos principais
@@ -6,7 +21,7 @@ export default function PlanoAlimentar() {
   const [preferencias, setPreferencias] = useState("");
   const [restricoes, setRestricoes] = useState("");
   const [plano, setPlano] = useState("");
-  const [calculos, setCalculos] = useState({ calorias: 0, macros: {}, micronutrientes: {} });
+  const [calculos, setCalculos] = useState<CalculosNutricionais>({ calorias: 0, macros: { carbo: 0, proteina: 0, gordura: 0 }, micronutrientes: { ferro: 0, calcio: 0 } });
   const [observacoes, setObservacoes] = useState("");
 
   // Simulação de geração automática por IA

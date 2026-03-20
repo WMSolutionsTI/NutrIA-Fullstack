@@ -62,6 +62,22 @@ export function getConversasCliente(clienteId: number) {
   return api<any[]>(`/api/v1/conversas/cliente/${clienteId}`);
 }
 
+export function getConversa(conversaId: number) {
+  return api<any>(`/api/v1/conversas/${conversaId}`);
+}
+
+export function abrirConversaDireta(conversaId: number) {
+  return api<any>(`/api/v1/conversas/conversas/${conversaId}/abrir`, {
+    method: "POST",
+  });
+}
+
+export function fecharConversaDireta(conversaId: number) {
+  return api<any>(`/api/v1/conversas/conversas/${conversaId}/fechar`, {
+    method: "POST",
+  });
+}
+
 export function criarConversa(data: any) {
   return api<any>("/api/v1/conversas/armazenar", {
     method: "POST",

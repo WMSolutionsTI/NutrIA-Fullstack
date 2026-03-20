@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 
 export default function GestaoPlanos() {
@@ -19,7 +21,7 @@ export default function GestaoPlanos() {
     }
   };
 
-  const alternarStatus = idx => {
+  const alternarStatus = (idx: number) => {
     setPlanos(planos.map((p, i) => i === idx ? { ...p, ativo: !p.ativo } : p));
   };
 

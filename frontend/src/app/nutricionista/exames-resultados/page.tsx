@@ -1,14 +1,16 @@
+"use client";
+
 import React, { useState } from "react";
 
 export default function ExamesResultados() {
   const [solicitacao, setSolicitacao] = useState("");
-  const [resultados, setResultados] = useState([]);
-  const [historico, setHistorico] = useState([]);
+  const [resultados, setResultados] = useState<File[]>([]);
+  const [historico, setHistorico] = useState<string[]>([]);
   const [analise, setAnalise] = useState("");
   const [recomendacoes, setRecomendacoes] = useState("");
 
   // Simulação de upload
-  const handleUpload = (e) => {
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     setResultados([...resultados, ...Array.from(e.target.files || [])]);
   };
 

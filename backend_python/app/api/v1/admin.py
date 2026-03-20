@@ -8,7 +8,11 @@ from app.domain.models.campanha import Campanha
 from app.domain.models.relatorio import Relatorio
 from app.domain.models.contabilidade import Contabilidade
 from app.domain.models.arquivo import Arquivo
+from app.domain.models.admin_request import AdminRequest
 from app.db import get_db
+from app.api.v1.auth import get_current_user
+from app.workers.admin_monitor_worker import coletar_metricas, notificar_admins
+import datetime
 
 router = APIRouter()
 
@@ -57,5 +61,63 @@ def listar_contabilidade(db: Session = Depends(get_db)):
 
 # Endpoints de gestão de arquivos
 @router.get("/admin/arquivos")
-def listar_arquivos(db: Session = Depends(get_db)):
+def listar_arquivos(db: Session = Depends(get_db), current_user: Nutricionista = Depends(get_current_user)):
+    if current_user.papel not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Acesso negado")
     return db.query(Arquivo).all()
+
+
+@router.get("/admin/metrics")
+def metrics(current_user: Nutricionista = Depends(get_current_user)):
+    if current_user.papel not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    return colectar_metricas()
+
+
+@router.post("/admin/notifications")
+def enviar_notificacao(texto: str, current_user: Nutricionista = Depends(get_current_user)):
+    if current_user.papel not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    notificar_admins(texto)
+    return {"status": "notificado"}
+
+
+@router.post("/admin/requests")
+def criar_pedido_admin(tenant_id: int, tipo: str, descricao: str, nutricionista_id: int = None, db: Session = Depends(get_db), current_user: Nutricionista = Depends(get_current_user)):
+    if current_user.papel not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    req = AdminRequest(
+        tenant_id=tenant_id,
+        nutricionista_id=nutricionista_id,
+        tipo=tipo,
+        descricao=descricao,
+        status="pendente",
+        criado_em=datetime.datetime.utcnow(),
+        atualizado_em=datetime.datetime.utcnow(),
+    )
+    db.add(req)
+    db.commit()
+    db.refresh(req)
+    notificar_admins(f"Novo pedido admin: {tipo} (tenant {tenant_id})")
+    return req
+
+
+@router.get("/admin/requests")
+def listar_pedidos_admin(db: Session = Depends(get_db), current_user: Nutricionista = Depends(get_current_user)):
+    if current_user.papel not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    return db.query(AdminRequest).order_by(AdminRequest.criado_em.desc()).all()
+
+
+@router.put("/admin/requests/{request_id}")
+def atualizar_pedido_admin(request_id: int, status: str, db: Session = Depends(get_db), current_user: Nutricionista = Depends(get_current_user)):
+    if current_user.papel not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    pedido = db.query(AdminRequest).filter(AdminRequest.id == request_id).first()
+    if not pedido:
+        raise HTTPException(status_code=404, detail="Pedido não encontrado")
+    pedido.status = status
+    pedido.atualizado_em = datetime.datetime.utcnow()
+    db.commit()
+    db.refresh(pedido)
+    return pedido

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 
 export default function ProntuarioPaciente() {
@@ -8,11 +10,12 @@ export default function ProntuarioPaciente() {
   const [anamnese, setAnamnese] = useState("");
   const [exames, setExames] = useState("");
   const [evolucao, setEvolucao] = useState("");
-  const [anexos, setAnexos] = useState([]);
+  const [anexos, setAnexos] = useState<File[]>([]);
   const [observacoes, setObservacoes] = useState("");
 
   // Handlers genéricos
-  const handleChange = (setState) => (e) => setState(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = <T extends Record<string, any>>(setState: React.Dispatch<React.SetStateAction<T>>) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => setState(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-8">
