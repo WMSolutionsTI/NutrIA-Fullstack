@@ -1,12 +1,13 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { getAuthToken, clearAuthToken } from "@/lib/auth";
+import { getMe } from "@/lib/api/auth";
+import { clearTokens, getAccessToken } from "@/lib/api/client";
 
 interface User {
   id: string;
   nome: string;
   email: string;
-  role: "nutricionista" | "admin";
+  role: "nutritionist" | "admin" | "owner" | "secretaria" | "nutri";
 }
 
 interface UserContextType {
@@ -25,16 +26,26 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // TODO: Buscar usuário autenticado via API usando token
-    const token = getAuthToken();
-    if (token) {
-      // Simulação: decodificar token ou buscar user
-      setUser({ id: "1", nome: "Nutricionista Exemplo", email: "nutri@email.com", role: "nutricionista" });
-    }
+    const token = getAccessToken();
+    if (!token) return;
+
+    getMe()
+      .then((profile) => {
+        setUser({
+          id: String(profile.id),
+          nome: profile.name,
+          email: profile.email,
+          role: profile.role,
+        });
+      })
+      .catch(() => {
+        clearTokens();
+        setUser(null);
+      });
   }, []);
 
   function logout() {
-    clearAuthToken();
+    clearTokens();
     setUser(null);
     window.location.href = "/nutricionista/login";
   }

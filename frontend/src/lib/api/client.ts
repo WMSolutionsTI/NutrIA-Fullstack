@@ -11,6 +11,7 @@
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const AUTH_COOKIE = 'nutria_token'
 
 /** Chaves para o localStorage */
 const TOKEN_KEY = 'nutria-pro:access_token'
@@ -35,16 +36,20 @@ export function getAccessToken(): string | null {
 
 /** Armazena os tokens de autenticação */
 export function setTokens(accessToken: string, refreshToken?: string): void {
+  if (typeof window === 'undefined') return
   localStorage.setItem(TOKEN_KEY, accessToken)
   if (refreshToken) {
     localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
   }
+  document.cookie = `${AUTH_COOKIE}=${accessToken}; path=/; SameSite=Lax`
 }
 
 /** Remove os tokens (logout) */
 export function clearTokens(): void {
+  if (typeof window === 'undefined') return
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(REFRESH_TOKEN_KEY)
+  document.cookie = `${AUTH_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`
 }
 
 /** Tenta renovar o access token usando o refresh token */
@@ -53,7 +58,7 @@ async function refreshAccessToken(): Promise<string | null> {
   if (!refreshToken) return null
 
   try {
-    const response = await fetch(`${API_URL}/v1/auth/refresh`, {
+    const response = await fetch(`${API_URL}/api/v1/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refreshToken }),

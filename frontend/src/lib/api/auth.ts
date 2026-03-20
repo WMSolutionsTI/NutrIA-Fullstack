@@ -13,33 +13,34 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   access_token: string
-  refresh_token: string
+  refresh_token?: string
   token_type: string
   expires_in: number
+  user?: UserProfile
 }
 
 export interface UserProfile {
   id: string
   email: string
   name: string
-  tenant_id: string
-  role: 'owner' | 'admin' | 'nutritionist'
+  tenant_id: string | number | null
+  role: 'owner' | 'admin' | 'nutritionist' | 'nutri' | 'secretaria'
 }
 
 /** Realiza login e armazena os tokens */
 export async function login(credentials: LoginRequest): Promise<UserProfile> {
-  const response = await apiClient.post<LoginResponse>('/v1/auth/login', credentials, {
+  const response = await apiClient.post<LoginResponse>('/api/v1/auth/login', credentials, {
     public: true,
   })
   setTokens(response.access_token, response.refresh_token)
 
-  return apiClient.get<UserProfile>('/v1/auth/me')
+  return response.user ?? apiClient.get<UserProfile>('/api/v1/auth/me')
 }
 
 /** Remove os tokens e invalida a sessão no servidor */
 export async function logout(): Promise<void> {
   try {
-    await apiClient.post('/v1/auth/logout', {})
+    await apiClient.post('/api/v1/auth/logout', {})
   } finally {
     clearTokens()
   }
@@ -47,5 +48,5 @@ export async function logout(): Promise<void> {
 
 /** Retorna o perfil do usuário autenticado */
 export function getMe(): Promise<UserProfile> {
-  return apiClient.get<UserProfile>('/v1/auth/me')
+  return apiClient.get<UserProfile>('/api/v1/auth/me')
 }

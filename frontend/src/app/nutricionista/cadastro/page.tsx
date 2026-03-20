@@ -1,7 +1,11 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { cadastroNutri, loginNutri } from "@/lib/api";
 
 export default function NutriCadastro() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     nome: "",
@@ -16,6 +20,7 @@ export default function NutriCadastro() {
     mensagemBoasVindas: "",
   });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -37,10 +42,32 @@ export default function NutriCadastro() {
 
   const handlePrev = () => setStep(step - 1);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Chamada real de API para cadastro
-    alert("Cadastro simulado! Dados enviados: " + JSON.stringify(form, null, 2));
+    try {
+      setLoading(true);
+      setError("");
+      await cadastroNutri(form);
+      const loginResponse = await loginNutri(form.email, form.senha);
+      if (typeof window !== "undefined" && loginResponse.access_token) {
+        localStorage.setItem("nutria-pro:access_token", loginResponse.access_token);
+        if (loginResponse.refresh_token) {
+          localStorage.setItem(
+            "nutria-pro:refresh_token",
+            loginResponse.refresh_token
+          );
+        }
+        document.cookie = `nutria_token=${loginResponse.access_token}; path=/; SameSite=Lax`;
+      }
+      router.push("/nutricionista/painel");
+      router.refresh();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Não foi possível concluir o cadastro.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -73,7 +100,7 @@ export default function NutriCadastro() {
         <div className="flex gap-4 justify-between mt-2">
           {step > 1 && <button type="button" onClick={handlePrev} className="rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 px-4 py-2">Voltar</button>}
           {step < 3 && <button type="button" onClick={handleNext} className="rounded-full bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 font-semibold shadow transition-colors ml-auto">Próximo</button>}
-          {step === 3 && <button type="submit" className="rounded-full bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 font-semibold shadow transition-colors ml-auto">Finalizar cadastro</button>}
+          {step === 3 && <button disabled={loading} type="submit" className="rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white px-6 py-3 font-semibold shadow transition-colors ml-auto">{loading ? "Criando conta..." : "Finalizar cadastro"}</button>}
         </div>
       </form>
     </div>

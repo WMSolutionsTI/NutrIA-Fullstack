@@ -3,10 +3,15 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function api<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("nutria-pro:access_token")
+      : null;
   const res = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options?.headers || {}),
     },
     credentials: "include",
@@ -17,16 +22,20 @@ export async function api<T>(endpoint: string, options?: RequestInit): Promise<T
 
 // Exemplos de endpoints
 export function loginNutri(email: string, senha: string) {
-  return api<{ token: string; user: any }>("/nutricionista/login", {
+  return api<{ access_token: string; refresh_token?: string; user: any }>("/api/v1/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, senha }),
+    body: JSON.stringify({ email, password: senha }),
   });
 }
 
 export function cadastroNutri(data: any) {
-  return api<{ token: string; user: any }>("/nutricionista/cadastro", {
+  return api<{ id: number }>("/api/v1/auth/register", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      username: data.nome ?? data.username,
+      email: data.email,
+      password: data.senha ?? data.password,
+    }),
   });
 }
 
