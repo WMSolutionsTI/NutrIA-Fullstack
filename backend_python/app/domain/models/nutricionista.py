@@ -15,5 +15,4 @@ class Nutricionista(Base):
     caixas_de_entrada = relationship("CaixaDeEntrada", back_populates="nutricionista")
     permissoes = Column(String)  # JSON string or dict
     auditoria = Column(String)
-    tipo_user = Column(String, default="nutri")  # 'nutri' ou 'cliente'
-    contexto_ia = Column(String)  # JSON string ou dict com planos, horários, especialidade, etc
+    tipo_user = Column(String, default="nutri")  # 'nutri' ou 'cliente'    papel = Column(String, default="nutri")  # 'admin', 'nutri', 'secretaria'    contexto_ia = Column(String)  # JSON string ou dict com planos, horários, especialidade, etc

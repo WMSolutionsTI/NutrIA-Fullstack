@@ -54,12 +54,33 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return token
 
 
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Token inválido",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+        role: str = payload.get("role", "nutri")
+    except JWTError:
+        raise credentials_exception
+    user = get_nutricionista_by_email(db, email)
+    if user is None:
+        raise credentials_exception
+    return user
+
+
 @router.post("/auth/token")
 def login_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = authenticate_nutricionista(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
-    access_token = create_access_token(data={"sub": user.email})
+    user_role = getattr(user, "papel", None) or getattr(user, "tipo_user", "nutri")
+    access_token = create_access_token(data={"sub": user.email, "role": user_role})
     return {"access_token": access_token, "token_type": "bearer"}
 
 

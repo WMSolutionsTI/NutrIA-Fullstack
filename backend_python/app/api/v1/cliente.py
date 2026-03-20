@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.domain.models.cliente import Cliente
 from app.domain.models.nutricionista import Nutricionista
 from app.db import get_db
+from app.api.v1.auth import get_current_user
 
 router = APIRouter(prefix="/clientes", tags=["Clientes"])
 
@@ -72,12 +73,19 @@ def ativar_cliente(cliente_id: int, db: Session = Depends(get_db)):
     return {"id": cliente.id, "status": cliente.status}
 
 @router.get("/", response_model=list)
-def list_clientes(db: Session = Depends(get_db)):
+def list_clientes(db: Session = Depends(get_db), current_user: Nutricionista = Depends(get_current_user)):
+    # Apenas admin/nutri podem listar todos clientes, secretária lista restrito
+    if current_user.papel not in ["admin", "nutri", "secretaria"]:
+        raise HTTPException(status_code=403, detail="Acesso negado")
     return db.query(Cliente).all()
 
 @router.post("/", response_model=dict)
-def create_cliente(cliente: dict, db: Session = Depends(get_db)):
-    new_cliente = Cliente(**cliente)
+def create_cliente(cliente: dict, db: Session = Depends(get_db), current_user: Nutricionista = Depends(get_current_user)):
+    if current_user.papel not in ["admin", "nutri", "secretaria"]:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    cliente_data = cliente.copy()
+    cliente_data["nutricionista_id"] = cliente_data.get("nutricionista_id") or current_user.id
+    new_cliente = Cliente(**cliente_data)
     db.add(new_cliente)
     db.commit()
     db.refresh(new_cliente)
