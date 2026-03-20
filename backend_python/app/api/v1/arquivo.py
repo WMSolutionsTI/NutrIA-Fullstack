@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from app.domain.models.arquivo import Arquivo
+from app.domain.models.cliente import Cliente
 from app.db import get_db
+from app.services.ai_service import gerar_resposta_agente
 
 router = APIRouter()
 
@@ -30,6 +32,32 @@ def upload_arquivo(
     db.commit()
     db.refresh(arquivo)
     return arquivo
+
+@router.post("/arquivos/enviar_ia")
+def enviar_arquivo_ia(file_id: int, cliente_id: int, contexto: str = None, db: Session = Depends(get_db)):
+    arquivo = db.query(Arquivo).filter(Arquivo.id == file_id).first()
+    if not arquivo:
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+
+    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+
+    prompt_usuario = (
+        f"O arquivo '{arquivo.nome}' (tipo {arquivo.tipo}) foi enviado para o cliente {cliente.nome} (status {cliente.status}). "
+        f"Contexto do nutricionista: {contexto or 'não informado'}. "
+        "Gere a mensagem mais apropriada para enviar ao cliente com base nesse arquivo e contexto, como um assistente de nutricionista experiente."
+    )
+
+    resposta_ia = gerar_resposta_agente("suporte_nutri", prompt_usuario, contexto=contexto)
+
+    # Simulação de envio - em um ambiente real, enviar via Chatwoot ou worker de mensagens.
+    return {
+        "status": "ok",
+        "sugestao_ia": resposta_ia,
+        "arquivo": arquivo.nome,
+        "cliente": cliente.nome
+    }
 
 @router.get("/arquivos/{tenant_id}")
 def consultar_arquivos(tenant_id: int, db: Session = Depends(get_db)):

@@ -31,13 +31,58 @@ export function cadastroNutri(data: any) {
 }
 
 export function getClientes() {
-  return api<any[]>("/nutricionista/clientes");
+  return api<any[]>("/api/v1/clientes");
+}
+
+export function getCliente(clienteId: number) {
+  return api<any>(`/api/v1/clientes/${clienteId}`);
+}
+
+export function atualizarCliente(clienteId: number, data: any) {
+  return api<any>(`/api/v1/clientes/${clienteId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function ativarCliente(clienteId: number) {
+  return api<any>(`/api/v1/clientes/${clienteId}/ativar`, {
+    method: "POST",
+  });
 }
 
 export function novoCliente(data: any) {
-  return api<any>("/nutricionista/clientes", {
+  return api<any>("/api/v1/clientes", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+export function getConversasCliente(clienteId: number) {
+  return api<any[]>(`/api/v1/conversas/cliente/${clienteId}`);
+}
+
+export function criarConversa(data: any) {
+  return api<any>("/api/v1/conversas/armazenar", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function uploadArquivo(formData: FormData) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/arquivos/upload`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error(res.statusText);
+  return res.json();
+}
+
+export function enviarArquivoIA(fileId: number, clienteId: number, contexto: string) {
+  return api<any>(`/api/v1/arquivos/enviar_ia`, {
+    method: "POST",
+    body: JSON.stringify({ file_id: fileId, cliente_id: clienteId, contexto }),
   });
 }
 
