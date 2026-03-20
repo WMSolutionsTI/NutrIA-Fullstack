@@ -39,6 +39,8 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
       - "9000:9000"
+    volumes:
+      - minio_data:/data
     networks:
       - nutria_overlay
 
@@ -49,6 +51,8 @@ services:
       RABBITMQ_HOST: rabbitmq
       REDIS_HOST: redis
       MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
       JWT_SECRET_KEY: supersecretkey
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
     depends_on:
@@ -59,9 +63,13 @@ services:
     networks:
       - nutria_overlay
     deploy:
-      replicas: 2
+      replicas: 3
       restart_policy:
         condition: on-failure
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
 
   worker_suporte_nutri:
     image: yourdockerhubusername/nutria-backend:latest
@@ -71,6 +79,153 @@ services:
       RABBITMQ_HOST: rabbitmq
       REDIS_HOST: redis
       MINIO_ENDPOINT: minio:9000
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - minio
+    networks:
+      - nutria_overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  worker_agente_lembretes:
+    image: yourdockerhubusername/nutria-backend:latest
+    command: ["python", "-m", "app.workers.agente_lembretes_agendamento_worker"]
+    environment:
+      DATABASE_URL: postgresql://nutria:nutria_pass@postgres:5432/nutria
+      RABBITMQ_HOST: rabbitmq
+      REDIS_HOST: redis
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - nutria_overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  worker_atualizar_agendamento:
+    image: yourdockerhubusername/nutria-backend:latest
+    command: ["python", "-m", "app.workers.atualizar_agendamento_worker"]
+    environment:
+      DATABASE_URL: postgresql://nutria:nutria_pass@postgres:5432/nutria
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - nutria_overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  worker_baixar_enviar_arquivo:
+    image: yourdockerhubusername/nutria-backend:latest
+    command: ["python", "-m", "app.workers.baixar_enviar_arquivo_worker"]
+    environment:
+      DATABASE_URL: postgresql://nutria:nutria_pass@postgres:5432/nutria
+      RABBITMQ_HOST: rabbitmq
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    depends_on:
+      - postgres
+      - rabbitmq
+      - minio
+    networks:
+      - nutria_overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  worker_buscar_criar_contato_conversa:
+    image: yourdockerhubusername/nutria-backend:latest
+    command: ["python", "-m", "app.workers.buscar_criar_contato_conversa_worker"]
+    environment:
+      DATABASE_URL: postgresql://nutria:nutria_pass@postgres:5432/nutria
+      RABBITMQ_HOST: rabbitmq
+      REDIS_HOST: redis
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - nutria_overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  worker_desmarcar_agendamento:
+    image: yourdockerhubusername/nutria-backend:latest
+    command: ["python", "-m", "app.workers.desmarcar_agendamento_worker"]
+    environment:
+      DATABASE_URL: postgresql://nutria:nutria_pass@postgres:5432/nutria
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - nutria_overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  worker_gestao_ligacoes:
+    image: yourdockerhubusername/nutria-backend:latest
+    command: ["python", "-m", "app.workers.gestao_ligacoes_worker"]
+    environment:
+      DATABASE_URL: postgresql://nutria:nutria_pass@postgres:5432/nutria
+      RABBITMQ_HOST: rabbitmq
+      REDIS_HOST: redis
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - nutria_overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  worker_recuperacao_leads:
+    image: yourdockerhubusername/nutria-backend:latest
+    command: ["python", "-m", "app.workers.recuperacao_leads_worker"]
+    environment:
+      DATABASE_URL: postgresql://nutria:nutria_pass@postgres:5432/nutria
+      RABBITMQ_HOST: rabbitmq
+      REDIS_HOST: redis
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - nutria_overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  worker_retell_secretaria_v3:
+    image: yourdockerhubusername/nutria-backend:latest
+    command: ["python", "-m", "app.workers.retell_secretaria_v3_worker"]
+    environment:
+      DATABASE_URL: postgresql://nutria:nutria_pass@postgres:5432/nutria
+      RABBITMQ_HOST: rabbitmq
+      REDIS_HOST: redis
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
     networks:
       - nutria_overlay
     deploy:
@@ -80,3 +235,5 @@ services:
 
 volumes:
   nutria_pg_data:
+  minio_data:
+
