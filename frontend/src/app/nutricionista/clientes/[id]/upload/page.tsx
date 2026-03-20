@@ -1,6 +1,6 @@
 "use client";
-import React, { useState } from "react";
-import { uploadArquivo, enviarArquivoIA } from "@/lib/api";
+import React, { useEffect, useState } from "react";
+import { uploadArquivo, enviarArquivoIA, getArquivosRepository, getConversasCliente, enviarArquivoRepositoryParaCliente } from "@/lib/api";
 
 interface FileType {
   value: string;
@@ -14,6 +14,7 @@ export default function ClienteUpload({ params }: { params: { id: string } }) {
   const [descricao, setDescricao] = useState("");
   const [status, setStatus] = useState("");
   const [erro, setErro] = useState("");
+  const [arquivosRepo, setArquivosRepo] = useState<any[]>([]);
 
   const tipos: FileType[] = [
     { value: "imagem", label: "Imagem" },
@@ -37,24 +38,52 @@ export default function ClienteUpload({ params }: { params: { id: string } }) {
       formData.append("nome", arquivo.name);
       formData.append("tipo", tipo);
       formData.append("tenant_id", "1");
-      formData.append("cliente_id", String(clienteId));
-      formData.append("conversa_id", "");
+      formData.append("descricao", descricao);
       formData.append("file", arquivo);
 
       const resultado = await uploadArquivo(formData);
       setStatus(`Arquivo enviado com sucesso: ${resultado.nome}`);
 
       if (descricao.trim()) {
-        const idArquivo = resultado.id;
-        const resposta = await enviarArquivoIA(idArquivo, clienteId, descricao);
-        setStatus(`Arquivo registrado. IA sugeriu mensagem: ${resposta.sugestao_ia}`);
+        const resposta = await enviarArquivoIA(resultado.id, clienteId, descricao);
+        setStatus(`Arquivo registrado e IA gerou sugestão: ${resposta.sugestao_ia}`);
       }
 
       setArquivo(null);
       setDescricao("");
+      await loadArquivosRepo();
     } catch (error) {
       console.error(error);
       setErro("Falha ao enviar arquivo. Verifique a conexão e tente novamente.");
+    }
+  };
+
+  const loadArquivosRepo = async () => {
+    try {
+      const repo = await getArquivosRepository(1);
+      setArquivosRepo(repo);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    loadArquivosRepo();
+  }, []);
+
+  const handleEnviarParaCliente = async (arquivoId: number) => {
+    setErro("");
+    setStatus("");
+    try {
+      const conversas = await getConversasCliente(clienteId);
+      const conversationId = conversas?.[0]?.id || "";
+      const accountId = "1";
+
+      const result = await enviarArquivoRepositoryParaCliente(arquivoId, clienteId, accountId, String(conversationId));
+      setStatus(`Arquivo enviado ao cliente. IA: ${result.sugestao_ia}`);
+    } catch (error) {
+      console.error(error);
+      setErro("Falha ao enviar arquivo ao cliente.");
     }
   };
 
@@ -104,6 +133,29 @@ export default function ClienteUpload({ params }: { params: { id: string } }) {
 
           <button className="rounded bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 font-semibold">Enviar e gerar IA</button>
         </form>
+
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold text-emerald-700 dark:text-emerald-300 mb-3">Repositório de arquivos (nutricionista)</h2>
+          {arquivosRepo.length === 0 && <p className="text-zinc-600 dark:text-zinc-300">Nenhum arquivo no repositório.</p>}
+          {arquivosRepo.length > 0 && (
+            <div className="space-y-2">
+              {arquivosRepo.map((arquivo) => (
+                <div key={arquivo.id} className="flex items-center justify-between rounded border p-3 dark:border-zinc-700">
+                  <div>
+                    <p className="font-semibold">{arquivo.nome}</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">Tipo: {arquivo.tipo} · Tamanho: {arquivo.tamanho || "-"}</p>
+                  </div>
+                  <button
+                    onClick={() => handleEnviarParaCliente(arquivo.id)}
+                    className="rounded bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm"
+                  >
+                    Enviar copia ao cliente
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

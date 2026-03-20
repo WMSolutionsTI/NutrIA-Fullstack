@@ -86,6 +86,18 @@ export function enviarArquivoIA(fileId: number, clienteId: number, contexto: str
   });
 }
 
+export function getArquivosRepository(tenantId: number) {
+  return api<any[]>(`/api/v1/arquivos/repository/${tenantId}`);
+}
+
+export function enviarArquivoRepositoryParaCliente(arquivoId: number, clienteId: number, accountId: string, conversationId: string) {
+  return api<any>(`/api/v1/arquivos/repository/enviar_cliente`, {
+    method: "POST",
+    body: JSON.stringify({ arquivo_id: arquivoId, cliente_id: clienteId, account_id: accountId, conversation_id: conversationId }),
+  });
+}
+
+
 export function getConsultas() {
   return api<any[]>("/nutricionista/consultas");
 }
