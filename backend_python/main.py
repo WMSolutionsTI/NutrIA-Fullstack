@@ -22,5 +22,9 @@ app.add_middleware(
 def startup_event():
     init_db()
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 app.include_router(api_router, prefix="/api/v1")
 

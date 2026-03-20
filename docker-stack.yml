@@ -1,0 +1,82 @@
+version: '3.9'
+
+networks:
+  nutria_overlay:
+    driver: overlay
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: nutria
+      POSTGRES_PASSWORD: nutria_pass
+      POSTGRES_DB: nutria
+    volumes:
+      - nutria_pg_data:/var/lib/postgresql/data
+    networks:
+      - nutria_overlay
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - nutria_overlay
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    environment:
+      RABBITMQ_DEFAULT_USER: nutria
+      RABBITMQ_DEFAULT_PASS: nutria
+    ports:
+      - "15672:15672"
+    networks:
+      - nutria_overlay
+
+  minio:
+    image: minio/minio:latest
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+    networks:
+      - nutria_overlay
+
+  api:
+    image: yourdockerhubusername/nutria-backend:latest
+    environment:
+      DATABASE_URL: postgresql://nutria:nutria_pass@postgres:5432/nutria
+      RABBITMQ_HOST: rabbitmq
+      REDIS_HOST: redis
+      MINIO_ENDPOINT: minio:9000
+      JWT_SECRET_KEY: supersecretkey
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - minio
+    networks:
+      - nutria_overlay
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+
+  worker_suporte_nutri:
+    image: yourdockerhubusername/nutria-backend:latest
+    command: ["python", "-m", "app.workers.suporte_nutri_worker"]
+    environment:
+      DATABASE_URL: postgresql://nutria:nutria_pass@postgres:5432/nutria
+      RABBITMQ_HOST: rabbitmq
+      REDIS_HOST: redis
+      MINIO_ENDPOINT: minio:9000
+    networks:
+      - nutria_overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  nutria_pg_data:
