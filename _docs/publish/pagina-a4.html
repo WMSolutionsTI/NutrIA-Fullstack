@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Página A4 com Margem</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto:wght@400;500&display=swap');
+    @page {
+      size: A4;
+      margin: 2cm;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #e8f5e9 0%, #fff 100%);
+      font-family: 'Montserrat', 'Roboto', sans-serif;
+    }
+    .a4-page {
+      width: 210mm;
+      height: 297mm;
+      margin: auto;
+      background: #fff;
+      box-shadow: 0 8px 32px rgba(67,160,71,0.18);
+      padding: 2cm;
+      box-sizing: border-box;
+      border-radius: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .gradient-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 18px;
+      background: linear-gradient(90deg, #43a047 0%, #81c784 100%);
+      border-radius: 24px 24px 0 0;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2em;
+      position: relative;
+    }
+    .logo {
+      width: 120px;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      border: 4px solid #43a047;
+      margin-bottom: 0.5em;
+    }
+    h1 {
+      font-size: 2.8em;
+      color: #2e7d32;
+      margin-top: 0.2em;
+      letter-spacing: 2px;
+      font-weight: 700;
+    }
+    h2 {
+      color: #388e3c;
+      font-weight: 400;
+      font-size: 1.3em;
+      margin-bottom: 0.5em;
+    }
+    .svg-icon {
+      width: 36px;
+      height: 36px;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    .features {
+      display: flex;
+      gap: 2em;
+      align-items: center;
+      margin-bottom: 2em;
+    }
+    .features-list {
+      flex: 1;
+      font-size: 1.1em;
+      color: #555;
+      margin-top: 1em;
+    }
+    .features-list li {
+      margin-bottom: 0.8em;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+    }
+    .features-img {
+      flex: 1;
+      text-align: center;
+    }
+    .features-img img {
+      width: 240px;
+      border-radius: 20px;
+      box-shadow: 0 2px 16px rgba(67,160,71,0.15);
+      border: 3px solid #e8f5e9;
+    }
+    .benefits {
+      background: linear-gradient(90deg, #e8f5e9 0%, #fff 100%);
+      border-radius: 16px;
+      padding: 1.5em;
+      margin-bottom: 2em;
+      display: flex;
+      gap: 1.5em;
+      box-shadow: 0 2px 8px rgba(67,160,71,0.08);
+    }
+    .benefit {
+      flex: 1;
+      background: #fff;
+      border-radius: 12px;
+      padding: 1em;
+      box-shadow: 0 2px 8px rgba(67,160,71,0.08);
+      text-align: center;
+    }
+    .benefit strong {
+      color: #43a047;
+      font-size: 1.2em;
+      display: block;
+      margin-bottom: 0.5em;
+    }
+    .cta {
+      text-align: center;
+      margin-top: 2em;
+    }
+    .cta-btn {
+      background: linear-gradient(90deg, #43a047 0%, #81c784 100%);
+      color: #fff;
+      padding: 1em 2em;
+      border-radius: 8px;
+      font-size: 1.3em;
+      text-decoration: none;
+      box-shadow: 0 2px 8px rgba(67,160,71,0.15);
+      font-weight: 700;
+      transition: background 0.3s;
+      border: none;
+      display: inline-block;
+    }
+    .cta-btn:hover {
+      background: linear-gradient(90deg, #388e3c 0%, #43a047 100%);
+    }
+    .contact {
+      margin-top: 1em;
+      color: #888;
+      font-size: 1.1em;
+    }
+    footer {
+      text-align: center;
+      margin-top: 3em;
+      color: #aaa;
+      font-size: 0.9em;
+      letter-spacing: 1px;
+    }
+    /* Decorative SVGs */
+    .decorative-svg {
+      position: absolute;
+      z-index: 0;
+      opacity: 0.12;
+    }
+    .decorative-svg.top {
+      top: 0;
+      right: 0;
+      width: 180px;
+    }
+    .decorative-svg.bottom {
+      bottom: 0;
+      left: 0;
+      width: 160px;
+    }
+  </style>
+</head>
+<body>
+  <div class="a4-page">
+    <div class="gradient-bar"></div>
+    <svg class="decorative-svg top" viewBox="0 0 180 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="90" cy="40" rx="90" ry="40" fill="#43a047" />
+      <ellipse cx="140" cy="30" rx="30" ry="15" fill="#81c784" />
+    </svg>
+    <svg class="decorative-svg bottom" viewBox="0 0 160 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="80" cy="30" rx="80" ry="30" fill="#388e3c" />
+      <ellipse cx="40" cy="20" rx="20" ry="10" fill="#e8f5e9" />
+    </svg>
+    <header>
+      <img class="logo" src="https://img.freepik.com/free-vector/healthy-food-logo-template_23-2148720072.jpg" alt="NutrIA-Pro Logo">
+      <h1>NutrIA-Pro</h1>
+      <h2>Inteligência Artificial para Nutrição Profissional</h2>
+    </header>
+    <section class="features">
+      <div class="features-list">
+        <h3 style="color:#43a047; font-size:1.4em; margin-bottom:1em;">Transforme sua clínica com tecnologia!</h3>
+        <ul>
+          <li><span class="svg-icon">🍏</span>Automatize consultas e planos alimentares</li>
+          <li><span class="svg-icon">👩‍⚕️</span>Gestão inteligente de pacientes</li>
+          <li><span class="svg-icon">📊</span>Relatórios e insights personalizados</li>
+          <li><span class="svg-icon">🔗</span>Integração com sistemas de saúde e mensageria</li>
+          <li><span class="svg-icon">🔒</span>Segurança e privacidade de dados</li>
+        </ul>
+        <p style="margin-top:2em; font-size:1.2em; color:#2e7d32; font-weight:600;">Descubra como a NutrIA-Pro pode revolucionar seu atendimento!</p>
+      </div>
+      <div class="features-img">
+        <img src="https://img.freepik.com/free-vector/nutrition-concept-illustration_114360-1032.jpg" alt="Nutrição Inteligente">
+      </div>
+    </section>
+    <section class="benefits">
+      <div class="benefit">
+        <svg class="svg-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="18" r="18" fill="#43a047"/><path d="M12 18l4 4 8-8" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <strong>Eficiência</strong>
+        <p>Reduza tarefas repetitivas e foque no que importa: o cuidado com o paciente.</p>
+      </div>
+      <div class="benefit">
+        <svg class="svg-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="18" r="18" fill="#81c784"/><path d="M18 12v12M12 18h12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <strong>Personalização</strong>
+        <p>Planos alimentares e recomendações adaptadas ao perfil de cada paciente.</p>
+      </div>
+      <div class="benefit">
+        <svg class="svg-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="18" r="18" fill="#388e3c"/><path d="M18 10v16M10 18h16" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <strong>Inovação</strong>
+        <p>Utilize IA para análises avançadas e decisões baseadas em dados.</p>
+      </div>
+    </section>
+    <section class="cta">
+      <a href="#" class="cta-btn">Solicite uma Demonstração</a>
+      <div class="contact">Entre em contato: <strong>contato@nutria-pro.com</strong></div>
+    </section>
+    <footer>
+      &copy; 2026 NutrIA-Pro. Todos os direitos reservados.
+    </footer>
+  </div>
+</body>
+</html>
