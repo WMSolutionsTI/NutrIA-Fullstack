@@ -8,7 +8,7 @@ from app.domain.models.campanha import Campanha
 from app.domain.models.relatorio import Relatorio
 from app.domain.models.contabilidade import Contabilidade
 from app.domain.models.arquivo import Arquivo
-from shared.database import get_db
+from app.db import get_db
 
 router = APIRouter()
 

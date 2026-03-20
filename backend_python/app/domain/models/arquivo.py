@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from app.models.base import Base
+from app.domain.models.base import Base
 
 class Arquivo(Base):
     __tablename__ = "arquivos"

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
-from app.models.base import Base
+from app.domain.models.base import Base
 
 class Conversa(Base):
     __tablename__ = "conversas"

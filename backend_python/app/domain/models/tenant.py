@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import relationship
-from app.models.base import Base
+from app.domain.models.base import Base
 
 class Tenant(Base):
     __tablename__ = "tenants"

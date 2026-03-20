@@ -1,3 +1,12 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from app.domain.models.nutricionista import Nutricionista
+from app.domain.models.tenant import Tenant
+from app.domain.models.caixa_de_entrada import CaixaDeEntrada
+from app.db import get_db
+
+router = APIRouter(prefix="/nutricionistas", tags=["Nutricionistas"])
+
 @router.get("/{nutri_id}/inboxes", response_model=dict)
 def listar_inboxes_nutri(nutri_id: int, tenant_id: int, db: Session = Depends(get_db)):
     nutri = db.query(Nutricionista).filter(Nutricionista.id == nutri_id, Nutricionista.tenant_id == tenant_id).first()
@@ -7,14 +16,14 @@ def listar_inboxes_nutri(nutri_id: int, tenant_id: int, db: Session = Depends(ge
     plano = nutri.plano
     limite = 1 if plano == "basic" else 5 if plano == "pro" else 10
     return {"nutri_id": nutri.id, "plano": plano, "limite_inboxes": limite, "inboxes": [i.identificador_chatwoot for i in inboxes]}
+
 @router.post("/{nutri_id}/fluxo_nutri", response_model=dict)
 def fluxo_especial_nutri(nutri_id: int, tenant_id: int, comando: str, db: Session = Depends(get_db)):
     nutri = db.query(Nutricionista).filter(Nutricionista.id == nutri_id, Nutricionista.tenant_id == tenant_id).first()
     if not nutri:
         raise HTTPException(status_code=404, detail="Nutricionista não encontrado ou tenant inválido")
-    if nutri.tipo_user != "nutri":
+    if hasattr(nutri, "tipo_user") and nutri.tipo_user != "nutri":
         raise HTTPException(status_code=403, detail="Usuário não autorizado para fluxo especial")
-    # Simulação de comandos administrativos
     operacoes = {
         "consultar_clientes": "Lista de clientes vinculados",
         "consultar_agenda": "Agenda de consultas",
@@ -27,14 +36,6 @@ def fluxo_especial_nutri(nutri_id: int, tenant_id: int, comando: str, db: Sessio
     }
     resultado = operacoes.get(comando, "Comando não reconhecido")
     return {"nutri_id": nutri.id, "comando": comando, "resultado": resultado}
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from shared.models.nutricionista import Nutricionista
-from shared.models.tenant import Tenant
-from shared.models.caixa_de_entrada import CaixaDeEntrada
-from app.db import get_db
-
-router = APIRouter(prefix="/nutricionistas", tags=["Nutricionistas"])
 
 @router.get("/", response_model=list)
 def list_nutricionistas(db: Session = Depends(get_db)):

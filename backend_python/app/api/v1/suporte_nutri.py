@@ -4,7 +4,7 @@ from app.domain.models.contabilidade import Contabilidade
 from app.domain.models.cliente import Cliente
 from app.domain.models.relatorio import Relatorio
 from app.domain.models.nutricionista import Nutricionista
-from app.database import get_db
+from app.db import get_db
 
 router = APIRouter(prefix="/suporte_nutri", tags=["Suporte Nutricionista"])
 

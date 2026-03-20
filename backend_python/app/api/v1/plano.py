@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.domain.models.plano import Plano
-from app.database import get_db
+from app.db import get_db
 
 router = APIRouter()
 
