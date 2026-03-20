@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models.contabilidade import Contabilidade
+from app.domain.models.contabilidade import Contabilidade
 from app.database import get_db
 
 router = APIRouter()

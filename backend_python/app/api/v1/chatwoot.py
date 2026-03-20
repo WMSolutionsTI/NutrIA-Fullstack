@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from app.models.cliente import Cliente
+from app.domain.models.cliente import Cliente
 from app.database import get_db
 from app.domain.models.caixa_de_entrada import CaixaDeEntrada
 from app.domain.models.nutricionista import Nutricionista

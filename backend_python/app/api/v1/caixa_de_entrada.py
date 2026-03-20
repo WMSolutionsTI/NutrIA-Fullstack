@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models.caixa_de_entrada import CaixaDeEntrada
-from app.models.nutricionista import Nutricionista
-from app.models.tenant import Tenant
+from app.domain.models.caixa_de_entrada import CaixaDeEntrada
+from app.domain.models.nutricionista import Nutricionista
+from app.domain.models.tenant import Tenant
 
 router = APIRouter(prefix="/caixas", tags=["Caixas de Entrada"])
 

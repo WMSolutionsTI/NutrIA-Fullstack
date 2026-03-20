@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models.campanha import Campanha
+from app.domain.models.campanha import Campanha
 from app.database import get_db
 
 router = APIRouter()

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models.contabilidade import Contabilidade
-from app.models.cliente import Cliente
-from app.models.relatorio import Relatorio
-from app.models.nutricionista import Nutricionista
+from app.domain.models.contabilidade import Contabilidade
+from app.domain.models.cliente import Cliente
+from app.domain.models.relatorio import Relatorio
+from app.domain.models.nutricionista import Nutricionista
 from app.database import get_db
 
 router = APIRouter(prefix="/estatisticas", tags=["Estatísticas Nutricionista"])

@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from shared.models.nutricionista import Nutricionista
-from shared.models.cliente import Cliente
-from shared.models.caixa_de_entrada import CaixaDeEntrada
-from shared.models.plano import Plano
-from shared.models.campanha import Campanha
-from shared.models.relatorio import Relatorio
-from shared.models.contabilidade import Contabilidade
-from shared.models.arquivo import Arquivo
+from app.domain.models.nutricionista import Nutricionista
+from app.domain.models.cliente import Cliente
+from app.domain.models.caixa_de_entrada import CaixaDeEntrada
+from app.domain.models.plano import Plano
+from app.domain.models.campanha import Campanha
+from app.domain.models.relatorio import Relatorio
+from app.domain.models.contabilidade import Contabilidade
+from app.domain.models.arquivo import Arquivo
 from shared.database import get_db
 
 router = APIRouter()

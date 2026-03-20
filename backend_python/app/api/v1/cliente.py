@@ -64,7 +64,7 @@ def ativar_cliente(cliente_id: int, db: Session = Depends(get_db)):
     return {"id": cliente.id, "status": cliente.status}
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models.cliente import Cliente
+from app.domain.models.cliente import Cliente
 from app.db import get_db
 
 router = APIRouter(prefix="/clientes", tags=["Clientes"])

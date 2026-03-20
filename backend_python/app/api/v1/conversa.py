@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models.conversa import Conversa
+from app.domain.models.conversa import Conversa
 from app.db import get_db
 
 router = APIRouter(prefix="/conversas", tags=["Conversas"])
