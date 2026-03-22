@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState } from "react";
 
 interface Cobranca {
@@ -16,7 +17,7 @@ const MOCK_COBRANCAS: Cobranca[] = [
 ];
 
 export default function Cobrancas() {
-  const [cobrancas, setCobrancas] = useState<Cobranca[]>(MOCK_COBRANCAS);
+  const [cobrancas] = useState<Cobranca[]>(MOCK_COBRANCAS);
   const [busca, setBusca] = useState("");
 
   const filtradas = cobrancas.filter(c =>
@@ -24,23 +25,32 @@ export default function Cobrancas() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-8">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-6">Cobranças</h1>
-        <div className="flex gap-4 mb-4">
+    <div className="mx-auto w-full max-w-6xl space-y-6">
+      <section className="rounded-3xl border border-emerald-100 bg-white p-7 shadow-sm">
+        <h1 className="text-3xl font-black text-zinc-900">Cobranças e Recebimentos</h1>
+        <p className="mt-2 text-zinc-600">
+          Gerencie links de pagamento, vencimentos e recuperação de inadimplência com agilidade.
+        </p>
+      </section>
+
+      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <input
             type="text"
             placeholder="Buscar por cliente"
-            className="rounded px-4 py-2 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 w-full max-w-xs"
+            className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm md:max-w-sm"
             value={busca}
-            onChange={e => setBusca(e.target.value)}
+            onChange={(e) => setBusca(e.target.value)}
           />
-          <button className="rounded bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 font-semibold">Nova Cobrança</button>
+          <button className="rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600">
+            Nova cobrança
+          </button>
         </div>
-        <div className="overflow-x-auto rounded-xl shadow-lg bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-zinc-800">
-          <table className="min-w-full text-left">
-            <thead>
-              <tr className="bg-emerald-50 dark:bg-zinc-800">
+
+        <div className="overflow-x-auto rounded-xl border border-zinc-200">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-zinc-100">
+              <tr className="text-zinc-700">
                 <th className="py-3 px-4">Cliente</th>
                 <th className="py-3 px-4">Valor</th>
                 <th className="py-3 px-4">Vencimento</th>
@@ -49,16 +59,26 @@ export default function Cobrancas() {
               </tr>
             </thead>
             <tbody>
-              {filtradas.map(cobranca => (
-                <tr key={cobranca.id} className="border-t border-zinc-100 dark:border-zinc-800">
+              {filtradas.map((cobranca) => (
+                <tr key={cobranca.id} className="border-t border-zinc-200 text-zinc-700">
                   <td className="py-2 px-4">{cobranca.cliente}</td>
                   <td className="py-2 px-4">R$ {cobranca.valor.toFixed(2)}</td>
                   <td className="py-2 px-4">{cobranca.vencimento}</td>
-                  <td className="py-2 px-4">{cobranca.status}</td>
                   <td className="py-2 px-4">
-                    <a href={cobranca.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline mr-2">Ver Link</a>
-                    <button className="text-emerald-600 hover:underline mr-2">Editar</button>
-                    <button className="text-red-600 hover:underline">Excluir</button>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        cobranca.status === "Paga" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {cobranca.status}
+                    </span>
+                  </td>
+                  <td className="py-2 px-4">
+                    <a href={cobranca.link} target="_blank" rel="noopener noreferrer" className="mr-3 font-semibold text-cyan-700 hover:text-cyan-800">
+                      Ver link
+                    </a>
+                    <button className="mr-3 font-semibold text-emerald-700 hover:text-emerald-800">Editar</button>
+                    <button className="font-semibold text-rose-700 hover:text-rose-800">Excluir</button>
                   </td>
                 </tr>
               ))}
@@ -70,7 +90,7 @@ export default function Cobrancas() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

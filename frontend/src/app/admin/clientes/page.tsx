@@ -1,74 +1,76 @@
 "use client";
-import React, { useState } from "react";
+
+import React, { useMemo, useState } from "react";
 
 export default function GestaoClientes() {
-  // Simulação de dados
-  const [clientes, setClientes] = useState([
+  const [clientes] = useState([
     { nome: "João Oliveira", email: "joao@cliente.com", nutricionista: "Ana Silva", status: "Ativo" },
     { nome: "Maria Lima", email: "maria@cliente.com", nutricionista: "Carlos Souza", status: "Inativo" },
+    { nome: "Fernanda Rocha", email: "fernanda@cliente.com", nutricionista: "Ana Silva", status: "Ativo" },
   ]);
   const [filtro, setFiltro] = useState("");
 
-  // Filtragem
-  const clientesFiltrados = filtro ? clientes.filter(c => c.nome.toLowerCase().includes(filtro.toLowerCase())) : clientes;
-
-  // Simulação de exportação
-  const exportar = () => {
-    alert("Exportação de clientes simulada!");
-  };
-
-  // Simulação de automação IA
-  const automacaoIA = "IA ativa: envia follow-ups, engaja clientes, monitora status e sugere ações.";
+  const clientesFiltrados = useMemo(
+    () =>
+      filtro
+        ? clientes.filter((c) => c.nome.toLowerCase().includes(filtro.toLowerCase()))
+        : clientes,
+    [clientes, filtro]
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-8">Gestão de Clientes</h1>
-        {/* Filtros */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Filtrar Clientes</h2>
-          <div className="flex gap-4">
-            <input value={filtro} onChange={e => setFiltro(e.target.value)} placeholder="Nome do cliente" className="input" />
-            <button onClick={exportar} className="rounded bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 font-semibold shadow">Exportar</button>
-          </div>
-        </section>
-        {/* Tabela de clientes */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Lista de Clientes</h2>
-          <table className="w-full bg-white dark:bg-zinc-900 rounded shadow">
-            <thead>
-              <tr>
-                <th className="py-2 px-4">Nome</th>
-                <th className="py-2 px-4">E-mail</th>
-                <th className="py-2 px-4">Nutricionista</th>
-                <th className="py-2 px-4">Status</th>
+    <div className="space-y-6">
+      <section className="rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm">
+        <h1 className="text-3xl font-black text-zinc-900">Gestão de Clientes</h1>
+        <p className="mt-2 text-zinc-600">
+          Controle de base ativa, relacionamento e qualidade de atendimento por nutricionista.
+        </p>
+      </section>
+
+      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <input
+            value={filtro}
+            onChange={(e) => setFiltro(e.target.value)}
+            placeholder="Buscar por nome"
+            className="w-full md:max-w-xs rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          />
+          <button className="rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white px-4 py-2.5 text-sm font-semibold">
+            Exportar relatório
+          </button>
+        </div>
+
+        <div className="mt-5 overflow-x-auto rounded-xl border border-zinc-200">
+          <table className="min-w-full text-left">
+            <thead className="bg-zinc-100">
+              <tr className="text-sm text-zinc-700">
+                <th className="px-4 py-3">Nome</th>
+                <th className="px-4 py-3">E-mail</th>
+                <th className="px-4 py-3">Nutricionista</th>
+                <th className="px-4 py-3">Status</th>
               </tr>
             </thead>
             <tbody>
-              {clientesFiltrados.map((c, idx) => (
-                <tr key={idx}>
-                  <td className="py-2 px-4">{c.nome}</td>
-                  <td className="py-2 px-4">{c.email}</td>
-                  <td className="py-2 px-4">{c.nutricionista}</td>
-                  <td className="py-2 px-4">{c.status}</td>
+              {clientesFiltrados.map((c) => (
+                <tr key={`${c.email}-${c.nome}`} className="border-t border-zinc-200 text-sm text-zinc-700">
+                  <td className="px-4 py-3 font-semibold text-zinc-900">{c.nome}</td>
+                  <td className="px-4 py-3">{c.email}</td>
+                  <td className="px-4 py-3">{c.nutricionista}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        c.status === "Ativo" ? "bg-emerald-100 text-emerald-700" : "bg-zinc-200 text-zinc-700"
+                      }`}
+                    >
+                      {c.status}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </section>
-        {/* Automação IA */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Automação IA</h2>
-          <div className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-            <p>{automacaoIA}</p>
-          </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
-
-// Estilos básicos para inputs
-// Adicione ao seu CSS global:
-// .input { border-radius: 0.5rem; border: 1px solid #d1d5db; padding: 0.5rem; background: #fff; color: #222; }
-// .input:focus { outline: none; border-color: #10b981; background: #f0fdf4; }

@@ -4,11 +4,15 @@ const PROTECTED_PATHS = [
   "/nutricionista/painel",
   "/nutricionista/clientes",
   "/nutricionista/agenda",
+  "/nutricionista/caixa-de-entrada",
   "/nutricionista/mensagens",
   "/nutricionista/campanhas",
   "/nutricionista/cobrancas",
   "/nutricionista/relatorios",
   "/nutricionista/configuracoes",
+  "/nutricionista/onboarding",
+  "/nutricionista/primeiro-acesso",
+  "/nutricionista/completar-cadastro",
 ];
 
 export function middleware(request: NextRequest) {

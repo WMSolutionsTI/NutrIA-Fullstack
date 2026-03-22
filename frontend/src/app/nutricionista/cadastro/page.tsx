@@ -1,108 +1,96 @@
 "use client";
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 
-import { cadastroNutri, loginNutri } from "@/lib/api";
+import Link from "next/link";
+import React, { useState } from "react";
+
+import { ApiError } from "@/lib/api/client";
+import { solicitarTrial } from "@/lib/api/auth";
 
 export default function NutriCadastro() {
-  const router = useRouter();
-  const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     nome: "",
     email: "",
-    senha: "",
     telefone: "",
-    especialidade: "",
-    clinica: "",
-    cnpj: "",
-    prompt: "",
-    horario: "",
-    mensagemBoasVindas: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [requested, setRequested] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  }
 
-  const handleNext = () => {
-    // Validação simples por etapa
-    if (step === 1 && (!form.nome || !form.email || !form.senha)) {
-      setError("Preencha nome, e-mail e senha.");
-      return;
-    }
-    if (step === 2 && (!form.telefone || !form.especialidade)) {
-      setError("Preencha telefone e especialidade.");
-      return;
-    }
-    setError("");
-    setStep(step + 1);
-  };
-
-  const handlePrev = () => setStep(step - 1);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.nome || !form.email || !form.telefone) {
+      setError("Preencha nome, telefone e e-mail.");
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
-      await cadastroNutri(form);
-      const loginResponse = await loginNutri(form.email, form.senha);
-      if (typeof window !== "undefined" && loginResponse.access_token) {
-        localStorage.setItem("nutria-pro:access_token", loginResponse.access_token);
-        if (loginResponse.refresh_token) {
-          localStorage.setItem(
-            "nutria-pro:refresh_token",
-            loginResponse.refresh_token
-          );
-        }
-        document.cookie = `nutria_token=${loginResponse.access_token}; path=/; SameSite=Lax`;
-      }
-      router.push("/nutricionista/painel");
-      router.refresh();
+      await solicitarTrial(form);
+      setRequested(true);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Não foi possível concluir o cadastro.";
-      setError(message);
+      if (err instanceof ApiError) {
+        setError(err.detail);
+      } else {
+        setError("Não foi possível solicitar seu cadastro de trial.");
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-12">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-8 w-full max-w-lg flex flex-col gap-6 border border-emerald-100 dark:border-zinc-800">
-        <h1 className="text-3xl font-bold text-center text-emerald-700 dark:text-emerald-300 mb-2">Cadastro de Nutricionista</h1>
-        {step === 1 && (
-          <>
-            <input name="nome" type="text" placeholder="Nome completo" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.nome} onChange={handleChange} />
-            <input name="email" type="email" placeholder="E-mail" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.email} onChange={handleChange} />
-            <input name="senha" type="password" placeholder="Senha" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.senha} onChange={handleChange} />
-          </>
-        )}
-        {step === 2 && (
-          <>
-            <input name="telefone" type="tel" placeholder="Telefone" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.telefone} onChange={handleChange} />
-            <input name="especialidade" type="text" placeholder="Especialidade" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.especialidade} onChange={handleChange} />
-            <input name="clinica" type="text" placeholder="Nome da clínica (opcional)" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.clinica} onChange={handleChange} />
-            <input name="cnpj" type="text" placeholder="CNPJ (opcional)" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.cnpj} onChange={handleChange} />
-          </>
-        )}
-        {step === 3 && (
-          <>
-            <textarea name="prompt" placeholder="Prompt/contexto da secretária virtual (ex: especialidade, tom de voz, informações da clínica)" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.prompt} onChange={handleChange} />
-            <input name="horario" type="text" placeholder="Horário de atendimento (ex: 8h-18h)" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.horario} onChange={handleChange} />
-            <input name="mensagemBoasVindas" type="text" placeholder="Mensagem de boas-vindas" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.mensagemBoasVindas} onChange={handleChange} />
-          </>
-        )}
-        {error && <div className="text-red-600 text-sm text-center">{error}</div>}
-        <div className="flex gap-4 justify-between mt-2">
-          {step > 1 && <button type="button" onClick={handlePrev} className="rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 px-4 py-2">Voltar</button>}
-          {step < 3 && <button type="button" onClick={handleNext} className="rounded-full bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 font-semibold shadow transition-colors ml-auto">Próximo</button>}
-          {step === 3 && <button disabled={loading} type="submit" className="rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white px-6 py-3 font-semibold shadow transition-colors ml-auto">{loading ? "Criando conta..." : "Finalizar cadastro"}</button>}
-        </div>
-      </form>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_15%_20%,#c6f6d544,transparent_35%),radial-gradient(circle_at_85%_0%,#99f6e444,transparent_45%),linear-gradient(130deg,#f4fff7_0%,#eef9ff_55%,#f8fff9_100%)] px-4 py-10 md:py-16">
+      <div className="mx-auto max-w-6xl grid gap-8 lg:grid-cols-[1.2fr_1fr]">
+        <section className="rounded-3xl border border-emerald-100 bg-white/90 backdrop-blur-xl shadow-[0_24px_80px_rgba(16,185,129,0.12)] p-8 md:p-10">
+          <p className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1 text-sm font-semibold text-emerald-700">
+            Ativação da Plataforma NutrIA Pro
+          </p>
+          <h1 className="mt-5 text-3xl md:text-4xl font-black text-zinc-900">
+            Solicite seu acesso de trial
+          </h1>
+          <p className="mt-3 text-zinc-600">
+            Informe apenas seus dados principais. O worker de cadastros enviará por e-mail uma senha temporária para o primeiro acesso.
+          </p>
+          <div className="mt-6 rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-cyan-900">
+            No primeiro login, você trocará a senha e em seguida completará seu cadastro com CPF obrigatório e endereço.
+          </div>
+          {requested && (
+            <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-blue-900">
+              Solicitação recebida. Verifique seu e-mail para acessar com a senha temporária.
+            </div>
+          )}
+        </section>
+
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-3xl border border-zinc-200/80 bg-white/95 backdrop-blur-xl shadow-[0_24px_80px_rgba(15,23,42,0.10)] p-7 md:p-8 flex flex-col gap-5"
+        >
+          <h2 className="text-2xl font-bold text-zinc-900">Cadastro inicial</h2>
+          <input name="nome" type="text" placeholder="Nome completo" className="rounded-xl px-4 py-3 border border-zinc-200 bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-300" value={form.nome} onChange={handleChange} />
+          <input name="telefone" type="tel" placeholder="Telefone com WhatsApp" className="rounded-xl px-4 py-3 border border-zinc-200 bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-300" value={form.telefone} onChange={handleChange} />
+          <input name="email" type="email" placeholder="E-mail profissional" className="rounded-xl px-4 py-3 border border-zinc-200 bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-300" value={form.email} onChange={handleChange} />
+
+          {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+
+          <div className="flex gap-3 justify-between pt-2">
+            <Link href="/nutricionista/login" className="rounded-xl px-4 py-2.5 border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors">
+              Já tenho acesso
+            </Link>
+            <button
+              disabled={loading}
+              type="submit"
+              className="ml-auto rounded-xl px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-60 transition-all hover:-translate-y-0.5"
+            >
+              {loading ? "Enviando..." : "Solicitar acesso trial"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

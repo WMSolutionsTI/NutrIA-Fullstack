@@ -110,11 +110,19 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   const url = `${API_URL}${path}`
 
-  let response = await fetch(url, {
-    ...fetchOptions,
-    headers,
-    signal: controller.signal,
-  }).finally(() => clearTimeout(timeoutId))
+  let response: Response
+  try {
+    response = await fetch(url, {
+      ...fetchOptions,
+      headers,
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId))
+  } catch (error: unknown) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new ApiError(0, 'Tempo de conexão excedido. Verifique sua internet e tente novamente.')
+    }
+    throw new ApiError(0, 'Não foi possível conectar com a API. Verifique se o backend está ativo e a URL configurada.')
+  }
 
   // Token expirado → tenta renovar e repetir a requisição
   if (response.status === 401 && !isPublic) {

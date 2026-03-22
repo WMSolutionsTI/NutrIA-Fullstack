@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState } from "react";
 
 interface Campanha {
@@ -15,7 +16,7 @@ const MOCK_CAMPANHAS: Campanha[] = [
 ];
 
 export default function Campanhas() {
-  const [campanhas, setCampanhas] = useState<Campanha[]>(MOCK_CAMPANHAS);
+  const [campanhas] = useState<Campanha[]>(MOCK_CAMPANHAS);
   const [busca, setBusca] = useState("");
 
   const filtradas = campanhas.filter(c =>
@@ -23,23 +24,32 @@ export default function Campanhas() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-8">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-6">Campanhas</h1>
-        <div className="flex gap-4 mb-4">
+    <div className="mx-auto w-full max-w-6xl space-y-6">
+      <section className="rounded-3xl border border-emerald-100 bg-white p-7 shadow-sm">
+        <h1 className="text-3xl font-black text-zinc-900">Campanhas e Retenção</h1>
+        <p className="mt-2 text-zinc-600">
+          Dispare campanhas com consistência comercial e acompanhe performance de relacionamento.
+        </p>
+      </section>
+
+      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <input
             type="text"
             placeholder="Buscar por título"
-            className="rounded px-4 py-2 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 w-full max-w-xs"
+            className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm md:max-w-sm"
             value={busca}
-            onChange={e => setBusca(e.target.value)}
+            onChange={(e) => setBusca(e.target.value)}
           />
-          <button className="rounded bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 font-semibold">Nova Campanha</button>
+          <button className="rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600">
+            Nova campanha
+          </button>
         </div>
-        <div className="overflow-x-auto rounded-xl shadow-lg bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-zinc-800">
-          <table className="min-w-full text-left">
-            <thead>
-              <tr className="bg-emerald-50 dark:bg-zinc-800">
+
+        <div className="overflow-x-auto rounded-xl border border-zinc-200">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-zinc-100">
+              <tr className="text-zinc-700">
                 <th className="py-3 px-4">Título</th>
                 <th className="py-3 px-4">Mensagem</th>
                 <th className="py-3 px-4">Data</th>
@@ -48,16 +58,24 @@ export default function Campanhas() {
               </tr>
             </thead>
             <tbody>
-              {filtradas.map(campanha => (
-                <tr key={campanha.id} className="border-t border-zinc-100 dark:border-zinc-800">
+              {filtradas.map((campanha) => (
+                <tr key={campanha.id} className="border-t border-zinc-200 text-zinc-700">
                   <td className="py-2 px-4">{campanha.titulo}</td>
                   <td className="py-2 px-4">{campanha.mensagem}</td>
                   <td className="py-2 px-4">{campanha.data}</td>
-                  <td className="py-2 px-4">{campanha.status}</td>
                   <td className="py-2 px-4">
-                    <button className="text-blue-600 hover:underline mr-2">Ver</button>
-                    <button className="text-emerald-600 hover:underline mr-2">Editar</button>
-                    <button className="text-red-600 hover:underline">Excluir</button>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        campanha.status === "Enviada" ? "bg-emerald-100 text-emerald-700" : "bg-cyan-100 text-cyan-700"
+                      }`}
+                    >
+                      {campanha.status}
+                    </span>
+                  </td>
+                  <td className="py-2 px-4">
+                    <button className="mr-3 font-semibold text-cyan-700 hover:text-cyan-800">Ver</button>
+                    <button className="mr-3 font-semibold text-emerald-700 hover:text-emerald-800">Editar</button>
+                    <button className="font-semibold text-rose-700 hover:text-rose-800">Excluir</button>
                   </td>
                 </tr>
               ))}
@@ -69,7 +87,7 @@ export default function Campanhas() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

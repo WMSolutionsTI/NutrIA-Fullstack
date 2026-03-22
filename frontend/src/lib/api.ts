@@ -96,8 +96,13 @@ export function criarConversa(data: any) {
 
 export async function uploadArquivo(formData: FormData) {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("nutria-pro:access_token")
+      : null;
   const res = await fetch(`${API_URL}/api/v1/arquivos/upload`, {
     method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: formData,
   });
   if (!res.ok) throw new Error(res.statusText);

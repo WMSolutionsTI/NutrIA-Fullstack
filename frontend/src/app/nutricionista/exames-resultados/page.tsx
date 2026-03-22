@@ -9,61 +9,79 @@ export default function ExamesResultados() {
   const [analise, setAnalise] = useState("");
   const [recomendacoes, setRecomendacoes] = useState("");
 
-  // Simulação de upload
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     setResultados([...resultados, ...Array.from(e.target.files || [])]);
   };
 
-  // Simulação de análise automática por IA
   const analisarIA = () => {
     setAnalise("Análise automática: resultados dentro dos parâmetros. Sugestão: manter plano alimentar atual.");
     setRecomendacoes("Recomendações clínicas: aumentar ingestão de ferro, repetir exame em 3 meses.");
+    setHistorico((prev) => [...prev, `Análise IA executada em ${new Date().toLocaleDateString("pt-BR")}`]);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-pink-700 dark:text-pink-300 mb-8">Exames e Resultados</h1>
-        {/* Solicitação de exames */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Solicitação de Exames</h2>
-          <input value={solicitacao} onChange={e => setSolicitacao(e.target.value)} placeholder="Exames a solicitar (ex: hemograma, ferritina)" className="input w-full" />
-        </section>
-        {/* Upload de resultados */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Upload de Resultados</h2>
-          <input type="file" multiple onChange={handleUpload} className="input" />
-          <ul className="mt-2">
-            {resultados.map((file, idx) => (
-              <li key={idx}>{file.name}</li>
-            ))}
-          </ul>
-        </section>
-        {/* Histórico de exames */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Histórico de Exames</h2>
-          <ul className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-            {historico.length === 0 ? <li>Nenhum exame registrado.</li> : historico.map((item, idx) => (
-              <li key={idx}>{item}</li>
-            ))}
-          </ul>
-        </section>
-        {/* Análise automática por IA */}
-        <section className="mb-6">
-          <button onClick={analisarIA} className="rounded bg-pink-600 hover:bg-pink-700 text-white px-6 py-2 font-semibold shadow">Analisar Automaticamente (IA)</button>
-          {analise && <div className="mt-4 bg-pink-100 dark:bg-zinc-800 rounded p-4 shadow"><p>{analise}</p></div>}
-        </section>
-        {/* Recomendações clínicas */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Recomendações Clínicas</h2>
-          <textarea value={recomendacoes} onChange={e => setRecomendacoes(e.target.value)} placeholder="Ajustes, orientações, próximos passos" className="input w-full h-16" />
-        </section>
-      </div>
+    <div className="mx-auto w-full max-w-6xl space-y-6">
+      <section className="rounded-3xl border border-emerald-100 bg-white p-7 shadow-sm">
+        <h1 className="text-3xl font-black text-zinc-900">Exames e Resultados</h1>
+        <p className="mt-2 text-zinc-600">
+          Central técnica para solicitação, upload e interpretação assistida de exames clínicos.
+        </p>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <article className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-zinc-700">Solicitação de exames</label>
+              <input
+                value={solicitacao}
+                onChange={(e) => setSolicitacao(e.target.value)}
+                placeholder="Ex: hemograma, ferritina, vitamina D"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-zinc-700">Upload de resultados</label>
+              <input type="file" multiple onChange={handleUpload} className="block w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm" />
+              {resultados.length > 0 && (
+                <ul className="mt-3 space-y-1 text-sm text-zinc-600">
+                  {resultados.map((file, idx) => (
+                    <li key={`${file.name}-${idx}`}>{file.name}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <button
+              onClick={analisarIA}
+              className="rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600"
+            >
+              Analisar com IA
+            </button>
+            {analise && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{analise}</div>}
+          </div>
+        </article>
+
+        <article className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-zinc-900">Histórico e recomendações</h2>
+          <div className="mt-4 space-y-3">
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Histórico</p>
+              <ul className="mt-2 space-y-1 text-sm text-zinc-700">
+                {historico.length === 0 ? <li>Nenhum exame registrado.</li> : historico.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            </div>
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Recomendações clínicas</p>
+              <textarea
+                value={recomendacoes}
+                onChange={(e) => setRecomendacoes(e.target.value)}
+                placeholder="Ajustes, orientações e próximos passos"
+                className="mt-2 h-28 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        </article>
+      </section>
     </div>
   );
 }
-
-// Estilos básicos para inputs
-// Adicione ao seu CSS global:
-// .input { border-radius: 0.5rem; border: 1px solid #d1d5db; padding: 0.5rem; background: #fff; color: #222; }
-// .input:focus { outline: none; border-color: #ec4899; background: #fdf2f8; }

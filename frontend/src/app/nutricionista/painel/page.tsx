@@ -1,44 +1,100 @@
 "use client";
-import React from "react";
+
+import Link from "next/link";
+import { useMemo } from "react";
+
+import { useUser } from "@/context/UserContext";
+
+const cards = [
+  {
+    title: "Caixa de Entrada",
+    description: "Gerencie inboxes, pendências de integração e atendimento omnicanal.",
+    href: "/nutricionista/caixa-de-entrada",
+  },
+  {
+    title: "Agenda Inteligente",
+    description: "Disponibilidade, lembretes e confirmação de consultas em fluxo automático.",
+    href: "/nutricionista/agenda",
+  },
+  {
+    title: "Clientes e Prontuário",
+    description: "Histórico completo, evolução e arquivos para atendimento personalizado.",
+    href: "/nutricionista/clientes",
+  },
+  {
+    title: "Mensagens",
+    description: "Converse em tempo real com clientes e com sua secretária IA.",
+    href: "/nutricionista/mensagens",
+  },
+];
 
 export default function NutriPainel() {
+  const { user, trial, trialExpired } = useUser();
+
+  const trialMessage = useMemo(() => {
+    if (!trial) return "Você está em plano ativo sem período de teste registrado.";
+    if (trialExpired) {
+      return "Seu acesso premium está pausado. Reative para continuar com toda a operação inteligente 24h.";
+    }
+    return "Sua operação inteligente está ativa com atendimento, agenda, relacionamento e gestão integrada.";
+  }, [trial, trialExpired]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-emerald-700 dark:text-emerald-300 mb-8">Painel do Nutricionista</h1>
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Central de Mensagens */}
-          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-6 border border-emerald-100 dark:border-zinc-800 flex flex-col gap-2">
-            <h2 className="text-xl font-semibold text-emerald-600 dark:text-emerald-200 mb-2">Central de Mensagens</h2>
-            <ul className="text-zinc-700 dark:text-zinc-200 text-base list-disc ml-4">
-              <li>Gerencie conversas de WhatsApp, Instagram, e-mail e mais</li>
-              <li>Histórico completo de interações</li>
-              <li>Respostas automáticas e follow-ups</li>
-            </ul>
-            <button className="mt-4 rounded bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 font-semibold">Acessar Mensagens</button>
-          </div>
-          {/* Agendamento e Consultas */}
-          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-6 border border-blue-100 dark:border-zinc-800 flex flex-col gap-2">
-            <h2 className="text-xl font-semibold text-emerald-600 dark:text-emerald-200 mb-2">Agendamento e Consultas</h2>
-            <ul className="text-zinc-700 dark:text-zinc-200 text-base list-disc ml-4">
-              <li>Calendário integrado e confirmação automática</li>
-              <li>Gestão de consultas e anotações clínicas</li>
-              <li>Envio de planos alimentares e materiais</li>
-            </ul>
-            <button className="mt-4 rounded bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 font-semibold">Ver Consultas</button>
-          </div>
-          {/* CRM e Relatórios */}
-          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-6 border border-pink-100 dark:border-zinc-800 flex flex-col gap-2">
-            <h2 className="text-xl font-semibold text-emerald-600 dark:text-emerald-200 mb-2">CRM e Relatórios</h2>
-            <ul className="text-zinc-700 dark:text-zinc-200 text-base list-disc ml-4">
-              <li>Histórico de clientes, consultas e arquivos</li>
-              <li>Métricas de engajamento e financeiro</li>
-              <li>Campanhas e automações inteligentes</li>
-            </ul>
-            <button className="mt-4 rounded bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 font-semibold">Acessar CRM</button>
-          </div>
+    <div className="space-y-6">
+      <section className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-[0_24px_80px_rgba(15,23,42,0.10)]">
+        <h1 className="text-4xl font-black tracking-tight text-zinc-900">Painel da Nutricionista</h1>
+        <p className="mt-2 text-zinc-600">
+          {user ? `Olá, ${user.nome}.` : "Olá."} Aqui está a visão executiva da sua operação.
+        </p>
+      </section>
+
+      <section className="rounded-2xl border border-cyan-200 bg-cyan-50 p-6">
+        <h2 className="text-2xl font-black text-cyan-900">Configuração inicial da secretária</h2>
+        <p className="mt-2 text-sm text-cyan-800">
+          Preencha todo o contexto do seu negócio para ativar atendimento de alta performance: especialidade, público-alvo,
+          agenda, precificação, pacotes, canais e integrações.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link href="/nutricionista/onboarding" className="rounded-xl bg-cyan-700 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-800">
+            Configurar agora
+          </Link>
+          <Link href="/nutricionista/caixa-de-entrada" className="rounded-xl border border-cyan-300 bg-white px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-cyan-100">
+            Configurar primeira inbox
+          </Link>
         </div>
-      </div>
+      </section>
+
+      <section
+        className={`rounded-2xl border p-5 ${
+          trialExpired ? "border-red-200 bg-red-50 text-red-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"
+        }`}
+      >
+        <p className="font-semibold">{trialMessage}</p>
+        {trialExpired && (
+          <Link
+            href="/nutricionista/cobrancas?trial=expired"
+            className="inline-flex mt-3 rounded-xl bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-semibold transition-colors"
+          >
+            Ativar assinatura agora
+          </Link>
+        )}
+      </section>
+
+      <section className="grid gap-5 md:grid-cols-2">
+        {cards.map((card) => (
+          <Link
+            key={card.title}
+            href={trialExpired && card.href !== "/nutricionista/cobrancas" ? "/nutricionista/cobrancas?trial=expired" : card.href}
+            className="group rounded-2xl border border-zinc-200 bg-white p-6 shadow-[0_16px_40px_rgba(15,23,42,0.08)] hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(16,185,129,0.18)] transition-all"
+          >
+            <h2 className="text-2xl font-bold text-zinc-900">{card.title}</h2>
+            <p className="mt-2 text-zinc-600">{card.description}</p>
+            <span className="mt-4 inline-flex text-sm font-semibold text-emerald-700 group-hover:text-emerald-800">
+              Acessar modulo
+            </span>
+          </Link>
+        ))}
+      </section>
     </div>
   );
 }

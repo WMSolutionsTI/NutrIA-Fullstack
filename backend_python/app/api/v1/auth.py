@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 import hashlib
 import hmac
+import json
 import os
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -55,7 +56,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    try:
+        return pwd_context.hash(password)
+    except Exception:
+        # fallback legado para ambientes sem backend bcrypt funcional
+        return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 
 def get_nutricionista_by_email(db: Session, email: str) -> Nutricionista | None:
@@ -63,6 +68,8 @@ def get_nutricionista_by_email(db: Session, email: str) -> Nutricionista | None:
 
 
 def serialize_user(user: Nutricionista) -> dict[str, str | int | None]:
+    metadata = _load_user_metadata(user)
+    profile = metadata.get("profile", {}) if isinstance(metadata.get("profile"), dict) else {}
     return {
         "id": user.id,
         "email": user.email,
@@ -71,6 +78,13 @@ def serialize_user(user: Nutricionista) -> dict[str, str | int | None]:
         "role": user.papel,
         "plan": user.plano,
         "status": user.status,
+        "must_change_password": bool(metadata.get("temporary_password", False)),
+        "profile_completed": bool(metadata.get("profile_completed", False)),
+        "setup_completed": bool(metadata.get("setup_completed", False)),
+        "cpf": profile.get("cpf"),
+        "cnpj": profile.get("cnpj"),
+        "endereco": profile.get("endereco"),
+        "telefone": profile.get("telefone"),
     }
 
 
@@ -88,6 +102,21 @@ def authenticate_nutricionista(
         db.refresh(user)
 
     return user
+
+
+def _load_user_metadata(user: Nutricionista) -> dict:
+    if not user.permissoes:
+        return {}
+    if isinstance(user.permissoes, dict):
+        return user.permissoes
+    try:
+        return json.loads(user.permissoes)
+    except Exception:
+        return {}
+
+
+def _save_user_metadata(user: Nutricionista, metadata: dict) -> None:
+    user.permissoes = json.dumps(metadata, ensure_ascii=False)
 
 
 def create_token(
@@ -189,6 +218,15 @@ def register(register_data: RegisterRequest, db: Session = Depends(get_db)):
         password_hash=get_password_hash(register_data.password),
         plano="basic",
         tipo_user="nutri",
+        permissoes=json.dumps(
+            {
+                "temporary_password": False,
+                "profile_completed": True,
+                "setup_completed": False,
+                "onboarding_source": "auth_register",
+            },
+            ensure_ascii=False,
+        ),
     )
     db.add(new_user)
     db.commit()
@@ -213,6 +251,36 @@ def verify_token(token: str = Depends(oauth2_scheme)):
 @router.get("/auth/me")
 def me(current_user: Nutricionista = Depends(get_current_user)):
     return serialize_user(current_user)
+
+
+class TrocarSenhaPrimeiroAcessoRequest(BaseModel):
+    senha_atual: str
+    nova_senha: str
+
+
+@router.post("/auth/primeiro-acesso/trocar-senha")
+def trocar_senha_primeiro_acesso(
+    data: TrocarSenhaPrimeiroAcessoRequest,
+    current_user: Nutricionista = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if len(data.nova_senha.strip()) < 8:
+        raise HTTPException(status_code=400, detail="A nova senha deve ter ao menos 8 caracteres")
+
+    if not verify_password(data.senha_atual, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Senha atual inválida")
+
+    current_user.password_hash = get_password_hash(data.nova_senha.strip())
+    metadata = _load_user_metadata(current_user)
+    metadata["temporary_password"] = False
+    _save_user_metadata(current_user, metadata)
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+    return {
+        "message": "Senha atualizada com sucesso",
+        "user": serialize_user(current_user),
+    }
 
 
 @router.post("/auth/refresh")

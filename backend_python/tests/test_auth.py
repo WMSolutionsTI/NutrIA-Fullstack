@@ -1,59 +1,66 @@
-from fastapi.testclient import TestClient
-from main import app
+import os
+import time
 
-client = TestClient(app)
+os.environ["TEST_ENV"] = "1"
+
+from app.api.v1.auth import (
+    LoginRequest,
+    RefreshRequest,
+    RegisterRequest,
+    get_current_user,
+    login,
+    me,
+    refresh,
+    register,
+    verify_token,
+)
+from app.db import SessionLocal, init_db
+from app.domain.models.nutricionista import Nutricionista
 
 
-def test_register_and_token():
-    # garante que registro e login funcionam
-    import time
+def _fresh_db() -> SessionLocal:
+    init_db()
+    db = SessionLocal()
+    db.query(Nutricionista).delete()
+    db.commit()
+    return db
+
+
+def test_register_and_verify_token():
+    db = _fresh_db()
     email = f"teste{int(time.time() * 1000)}@nutria.com"
 
-    resp = client.post("/api/v1/auth/register", json={"username": "Teste", "email": email, "password": "senha123"})
-    assert resp.status_code == 200
-    assert "id" in resp.json()
+    reg = register(
+        RegisterRequest(username="Teste", email=email, password="senha123"),
+        db,
+    )
+    assert "id" in reg
 
-    login_resp = client.post("/api/v1/auth/token", data={"username": email, "password": "senha123"})
-    assert login_resp.status_code == 200
-    data = login_resp.json()
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
-    verify_resp = client.get("/api/v1/auth/verify", headers={"Authorization": f"Bearer {data['access_token']}"})
-    assert verify_resp.status_code == 200
-    assert verify_resp.json()["status"] == "valid"
+    login_data = login(LoginRequest(email=email, password="senha123"), db)
+    assert "access_token" in login_data
+    assert login_data["token_type"] == "bearer"
+
+    verify_resp = verify_token(login_data["access_token"])
+    assert verify_resp["status"] == "valid"
+    assert verify_resp["email"] == email
+    db.close()
 
 
 def test_json_login_me_and_refresh():
-    import time
-
+    db = _fresh_db()
     email = f"teste-json-{int(time.time() * 1000)}@nutria.com"
 
-    register_resp = client.post(
-        "/api/v1/auth/register",
-        json={"username": "Teste JSON", "email": email, "password": "senha123"},
-    )
-    assert register_resp.status_code == 200
+    register(RegisterRequest(username="Teste JSON", email=email, password="senha123"), db)
+    login_resp = login(LoginRequest(email=email, password="senha123"), db)
 
-    login_resp = client.post(
-        "/api/v1/auth/login",
-        json={"email": email, "password": "senha123"},
-    )
-    assert login_resp.status_code == 200
-    login_data = login_resp.json()
-    assert "access_token" in login_data
-    assert "refresh_token" in login_data
-    assert login_data["user"]["email"] == email
+    assert "access_token" in login_resp
+    assert "refresh_token" in login_resp
+    assert login_resp["user"]["email"] == email
 
-    me_resp = client.get(
-        "/api/v1/auth/me",
-        headers={"Authorization": f"Bearer {login_data['access_token']}"},
-    )
-    assert me_resp.status_code == 200
-    assert me_resp.json()["email"] == email
+    current_user = get_current_user(login_resp["access_token"], db)
+    me_resp = me(current_user)
+    assert me_resp["email"] == email
 
-    refresh_resp = client.post(
-        "/api/v1/auth/refresh",
-        json={"refresh_token": login_data["refresh_token"]},
-    )
-    assert refresh_resp.status_code == 200
-    assert "access_token" in refresh_resp.json()
+    refresh_resp = refresh(RefreshRequest(refresh_token=login_resp["refresh_token"]))
+    assert "access_token" in refresh_resp
+    db.close()

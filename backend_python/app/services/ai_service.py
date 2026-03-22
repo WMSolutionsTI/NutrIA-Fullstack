@@ -29,6 +29,15 @@ AGENTS = {
     ),
 }
 
+GLOBAL_GUARDRAILS = (
+    "Regras obrigatórias: "
+    "1) Cumpra estritamente o papel definido no sistema. "
+    "2) Não invente dados, não execute ações sem contexto suficiente e não extrapole permissões. "
+    "3) Nunca misture informações entre contas/tenants/clientes diferentes. "
+    "4) Se faltar dado crítico, peça confirmação objetiva. "
+    "5) Não forneça informações sigilosas sem autorização explícita no contexto."
+)
+
 def gerar_resposta_agente(assunto, prompt_usuario, contexto=None, model="gpt-3.5-turbo", temperature=0.7):
     """
     Gera resposta usando OpenAI, especializando o agente conforme assunto.
@@ -38,7 +47,7 @@ def gerar_resposta_agente(assunto, prompt_usuario, contexto=None, model="gpt-3.5
         return f"[Mocked resposta para agente '{assunto}']"
     system_prompt = AGENTS.get(assunto, "Você é um assistente especializado.")
     messages = [
-        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": f"{GLOBAL_GUARDRAILS}\n{system_prompt}"},
         {"role": "user", "content": prompt_usuario}
     ]
     if contexto:

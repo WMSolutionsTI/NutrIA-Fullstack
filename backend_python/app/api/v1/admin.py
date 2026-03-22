@@ -71,7 +71,7 @@ def listar_arquivos(db: Session = Depends(get_db), current_user: Nutricionista =
 def metrics(current_user: Nutricionista = Depends(get_current_user)):
     if current_user.papel not in ["admin"]:
         raise HTTPException(status_code=403, detail="Acesso negado")
-    return colectar_metricas()
+    return coletar_metricas()
 
 
 @router.post("/admin/notifications")

@@ -1,5 +1,7 @@
 "use client";
+
 import React, { useState } from "react";
+import Link from "next/link";
 
 export default function NovoCliente() {
   const [form, setForm] = useState({
@@ -17,7 +19,6 @@ export default function NovoCliente() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Chamada real de API para cadastro
     if (!form.nome || !form.email) {
       setError("Nome e e-mail são obrigatórios.");
       return;
@@ -27,16 +28,31 @@ export default function NovoCliente() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-12">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-8 w-full max-w-lg flex flex-col gap-6 border border-emerald-100 dark:border-zinc-800">
-        <h1 className="text-3xl font-bold text-center text-emerald-700 dark:text-emerald-300 mb-2">Novo Cliente</h1>
-        <input name="nome" type="text" placeholder="Nome completo" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.nome} onChange={handleChange} />
-        <input name="email" type="email" placeholder="E-mail" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.email} onChange={handleChange} />
-        <input name="telefone" type="tel" placeholder="Telefone" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.telefone} onChange={handleChange} />
-        <input name="nascimento" type="date" placeholder="Data de nascimento" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.nascimento} onChange={handleChange} />
-        <textarea name="observacoes" placeholder="Observações (opcional)" className="rounded px-4 py-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800" value={form.observacoes} onChange={handleChange} />
-        {error && <div className="text-red-600 text-sm text-center">{error}</div>}
-        <button type="submit" className="rounded-full bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 font-semibold shadow transition-colors">Cadastrar</button>
+    <div className="mx-auto w-full max-w-3xl space-y-6">
+      <section className="rounded-3xl border border-emerald-100 bg-white p-7 shadow-sm">
+        <h1 className="text-3xl font-black text-zinc-900">Novo Cliente</h1>
+        <p className="mt-2 text-zinc-600">
+          Cadastre o cliente para iniciar atendimento, agenda e automações de relacionamento.
+        </p>
+      </section>
+
+      <form onSubmit={handleSubmit} className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="grid gap-4 md:grid-cols-2">
+          <input name="nome" type="text" placeholder="Nome completo" className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm md:col-span-2" value={form.nome} onChange={handleChange} />
+          <input name="email" type="email" placeholder="E-mail" className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm" value={form.email} onChange={handleChange} />
+          <input name="telefone" type="tel" placeholder="Telefone" className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm" value={form.telefone} onChange={handleChange} />
+          <input name="nascimento" type="date" className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm" value={form.nascimento} onChange={handleChange} />
+          <textarea name="observacoes" placeholder="Observações" className="h-28 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm md:col-span-2" value={form.observacoes} onChange={handleChange} />
+        </div>
+        {error && <div className="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{error}</div>}
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button type="submit" className="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600">
+            Cadastrar cliente
+          </button>
+          <Link href="/nutricionista/clientes" className="rounded-xl border border-zinc-300 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
+            Voltar para clientes
+          </Link>
+        </div>
       </form>
     </div>
   );

@@ -1,69 +1,83 @@
 "use client";
-import React, { useState } from "react";
+
+const fluxo = {
+  receita: 154320,
+  despesas: 49650,
+  saldo: 104670,
+  mrr: 28740,
+};
+
+const eventos = [
+  "Repasse de afiliados consolidado em 20/03/2026.",
+  "Conciliação automática de 98,2% das cobranças concluída.",
+  "2 faturas enterprise em análise de risco de churn.",
+];
+
+const previsoes = [
+  { mes: "Abril/2026", valor: "R$ 171.000", variacao: "+11%" },
+  { mes: "Maio/2026", valor: "R$ 182.500", variacao: "+6%" },
+  { mes: "Junho/2026", valor: "R$ 195.900", variacao: "+7%" },
+];
 
 export default function ContabilidadeAdmin() {
-  // Simulação de dados financeiros
-  const [financeiro, setFinanceiro] = useState({ receita: 15000, despesas: 5000, saldo: 10000 });
-  const [relatorios, setRelatorios] = useState([
-    "Receita março: R$ 15.000",
-    "Despesas março: R$ 5.000",
-    "Saldo atual: R$ 10.000"
-  ]);
-
-  // Simulação de exportação
-  const exportar = () => {
-    alert("Exportação de relatórios financeiros simulada!");
-  };
-
-  // Simulação de automação IA
-  const automacaoIA = "IA ativa: monitora fluxo de caixa, sugere ajustes, gera relatórios e exporta dados automaticamente.";
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-green-700 dark:text-green-300 mb-8">Contabilidade Admin</h1>
-        {/* Fluxo de caixa */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Fluxo de Caixa</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-              <p className="font-bold">Receita:</p>
-              <p>R$ {financeiro.receita}</p>
-            </div>
-            <div className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-              <p className="font-bold">Despesas:</p>
-              <p>R$ {financeiro.despesas}</p>
-            </div>
-            <div className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-              <p className="font-bold">Saldo:</p>
-              <p>R$ {financeiro.saldo}</p>
-            </div>
+    <div className="space-y-6">
+      <section className="rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm">
+        <h1 className="text-3xl font-black text-zinc-900">Contabilidade e Receita</h1>
+        <p className="mt-2 text-zinc-600">
+          Visão financeira consolidada para previsibilidade de caixa e expansão sustentável.
+        </p>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-4">
+        <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+          <p className="text-sm font-semibold text-emerald-700">Receita mensal</p>
+          <p className="mt-1 text-3xl font-black text-emerald-900">R$ {fluxo.receita}</p>
+        </article>
+        <article className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+          <p className="text-sm font-semibold text-rose-700">Despesas</p>
+          <p className="mt-1 text-3xl font-black text-rose-900">R$ {fluxo.despesas}</p>
+        </article>
+        <article className="rounded-2xl border border-cyan-200 bg-cyan-50 p-5">
+          <p className="text-sm font-semibold text-cyan-700">Saldo operacional</p>
+          <p className="mt-1 text-3xl font-black text-cyan-900">R$ {fluxo.saldo}</p>
+        </article>
+        <article className="rounded-2xl border border-violet-200 bg-violet-50 p-5">
+          <p className="text-sm font-semibold text-violet-700">MRR</p>
+          <p className="mt-1 text-3xl font-black text-violet-900">R$ {fluxo.mrr}</p>
+        </article>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
+        <article className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-zinc-900">Eventos de conciliação</h2>
+            <button className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800">
+              Exportar DRE
+            </button>
           </div>
-        </section>
-        {/* Relatórios financeiros */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Relatórios Financeiros</h2>
-          <ul className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-            {relatorios.map((r, idx) => <li key={idx}>{r}</li>)}
+          <ul className="mt-4 space-y-2 text-sm text-zinc-700">
+            {eventos.map((evento) => (
+              <li key={evento} className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5">
+                {evento}
+              </li>
+            ))}
           </ul>
-        </section>
-        {/* Automação IA */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Automação IA</h2>
-          <div className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-            <p>{automacaoIA}</p>
+        </article>
+
+        <article className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-zinc-900">Previsão de receita</h2>
+          <div className="mt-4 space-y-3">
+            {previsoes.map((p) => (
+              <div key={p.mes} className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{p.mes}</p>
+                <p className="mt-1 text-lg font-bold text-zinc-900">{p.valor}</p>
+                <p className="text-xs font-semibold text-emerald-600">{p.variacao}</p>
+              </div>
+            ))}
           </div>
-        </section>
-        {/* Exportação */}
-        <section className="mb-6">
-          <button onClick={exportar} className="rounded bg-green-600 hover:bg-green-700 text-white px-6 py-2 font-semibold shadow">Exportar Relatórios</button>
-        </section>
-      </div>
+        </article>
+      </section>
     </div>
   );
 }
-
-// Estilos básicos para inputs
-// Adicione ao seu CSS global:
-// .input { border-radius: 0.5rem; border: 1px solid #22c55e; padding: 0.5rem; background: #fff; color: #222; }
-// .input:focus { outline: none; border-color: #22c55e; background: #f0fdf4; }

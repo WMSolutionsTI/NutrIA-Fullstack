@@ -1,5 +1,8 @@
 "use client";
-import React, { useState } from "react";
+
+import Link from "next/link";
+import React, { useEffect, useState } from "react";
+import { getClientes, novoCliente } from "@/lib/api";
 
 interface Cliente {
   id: string;
@@ -9,14 +12,10 @@ interface Cliente {
   status: string;
 }
 
-// Mock inicial para visual
 const MOCK_CLIENTES: Cliente[] = [
   { id: "1", nome: "Maria Silva", email: "maria@email.com", telefone: "(11) 99999-0001", status: "Ativo" },
   { id: "2", nome: "João Souza", email: "joao@email.com", telefone: "(11) 99999-0002", status: "Inativo" },
 ];
-
-import { useEffect } from "react";
-import { getClientes, novoCliente } from "@/lib/api";
 
 export default function Clientes() {
   const [clientes, setClientes] = useState<Cliente[]>(MOCK_CLIENTES);
@@ -45,48 +44,58 @@ export default function Clientes() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-8">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-6">Clientes</h1>
-        <div className="flex flex-col gap-4 mb-4">
-          <div className="flex flex-wrap gap-3">
+    <div className="mx-auto w-full max-w-6xl space-y-6">
+      <section className="rounded-3xl border border-emerald-100 bg-white p-7 shadow-sm">
+        <h1 className="text-3xl font-black text-zinc-900">Clientes</h1>
+        <p className="mt-2 text-zinc-600">
+          Gerencie sua base ativa e acompanhe relacionamento, status e histórico de atendimento.
+        </p>
+      </section>
+
+      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex w-full flex-wrap gap-3">
             <input
               type="text"
               placeholder="Buscar por nome ou e-mail"
-              className="rounded px-4 py-2 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 w-full max-w-xs"
+              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm md:max-w-sm"
               value={busca}
-              onChange={e => setBusca(e.target.value)}
+              onChange={(e) => setBusca(e.target.value)}
             />
           </div>
+          <Link href="/nutricionista/clientes/novo" className="rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600">
+            Novo cliente
+          </Link>
+        </div>
 
-          <details className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-md border border-zinc-200 dark:border-zinc-700">
+        <details className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
             <summary className="font-semibold cursor-pointer">Cadastrar novo cliente</summary>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mt-3">
               <input
                 type="text"
                 placeholder="Nome"
                 value={novoNome}
-                onChange={e => setNovoNome(e.target.value)}
-                className="rounded px-3 py-2 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                onChange={(e) => setNovoNome(e.target.value)}
+                className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm"
               />
               <input
                 type="email"
                 placeholder="E-mail"
                 value={novoEmail}
-                onChange={e => setNovoEmail(e.target.value)}
-                className="rounded px-3 py-2 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                onChange={(e) => setNovoEmail(e.target.value)}
+                className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm"
               />
               <input
                 type="text"
                 placeholder="Telefone"
                 value={novoTelefone}
-                onChange={e => setNovoTelefone(e.target.value)}
-                className="rounded px-3 py-2 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                onChange={(e) => setNovoTelefone(e.target.value)}
+                className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm"
               />
               <select
                 value={novoStatus}
-                onChange={e => setNovoStatus(e.target.value)}
-                className="rounded px-3 py-2 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                onChange={(e) => setNovoStatus(e.target.value)}
+                className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm"
               >
                 <option value="cliente_potencial">Potencial</option>
                 <option value="cliente_ativo">Ativo</option>
@@ -110,7 +119,13 @@ export default function Clientes() {
                       status: novoStatus,
                       nutricionista_id: 1,
                     });
-                    setClientes(prev => [...prev, { id: String(created.id), nome: novoNome, email: novoEmail, telefone: novoTelefone, status: novoStatus }] as Cliente[]);
+                    setClientes(
+                      (prev) =>
+                        [
+                          ...prev,
+                          { id: String(created.id), nome: novoNome, email: novoEmail, telefone: novoTelefone, status: novoStatus },
+                        ] as Cliente[]
+                    );
                     setNovoNome("");
                     setNovoEmail("");
                     setNovoTelefone("");
@@ -120,18 +135,18 @@ export default function Clientes() {
                     setErro("Erro ao criar cliente");
                   }
                 }}
-                className="rounded bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 font-semibold"
+                className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"
               >
                 Criar
               </button>
-              {erro && <span className="text-sm text-red-600">{erro}</span>}
+              {erro && <span className="text-sm font-semibold text-rose-700">{erro}</span>}
             </div>
-          </details>
-        </div>
-        <div className="overflow-x-auto rounded-xl shadow-lg bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-zinc-800">
-          <table className="min-w-full text-left">
-            <thead>
-              <tr className="bg-emerald-50 dark:bg-zinc-800">
+        </details>
+
+        <div className="overflow-x-auto rounded-xl border border-zinc-200">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-zinc-100">
+              <tr className="text-zinc-700">
                 <th className="py-3 px-4">Nome</th>
                 <th className="py-3 px-4">E-mail</th>
                 <th className="py-3 px-4">Telefone</th>
@@ -140,16 +155,20 @@ export default function Clientes() {
               </tr>
             </thead>
             <tbody>
-              {filtrados.map(cliente => (
-                <tr key={cliente.id} className="border-t border-zinc-100 dark:border-zinc-800">
-                  <td className="py-2 px-4">{cliente.nome}</td>
+              {filtrados.map((cliente) => (
+                <tr key={cliente.id} className="border-t border-zinc-200 text-zinc-700">
+                  <td className="py-2 px-4 font-semibold text-zinc-900">{cliente.nome}</td>
                   <td className="py-2 px-4">{cliente.email}</td>
                   <td className="py-2 px-4">{cliente.telefone}</td>
-                  <td className="py-2 px-4">{cliente.status}</td>
                   <td className="py-2 px-4">
-                    <button className="text-blue-600 hover:underline mr-2">Ver</button>
-                    <button className="text-emerald-600 hover:underline mr-2">Editar</button>
-                    <button className="text-red-600 hover:underline">Excluir</button>
+                    <span className="rounded-full bg-zinc-200 px-2.5 py-1 text-xs font-semibold text-zinc-700">{cliente.status}</span>
+                  </td>
+                  <td className="py-2 px-4">
+                    <Link className="mr-3 font-semibold text-cyan-700 hover:text-cyan-800" href={`/nutricionista/clientes/${cliente.id}`}>
+                      Ver
+                    </Link>
+                    <button className="mr-3 font-semibold text-emerald-700 hover:text-emerald-800">Editar</button>
+                    <button className="font-semibold text-rose-700 hover:text-rose-800">Excluir</button>
                   </td>
                 </tr>
               ))}
@@ -161,7 +180,7 @@ export default function Clientes() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

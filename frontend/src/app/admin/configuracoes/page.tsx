@@ -1,61 +1,65 @@
 "use client";
-import React, { useState } from "react";
+
+const integracoes = [
+  { nome: "Chatwoot Cloud", status: "Operacional", latencia: "98ms" },
+  { nome: "n8n Orchestrator", status: "Operacional", latencia: "121ms" },
+  { nome: "Asaas Billing", status: "Operacional", latencia: "143ms" },
+  { nome: "Workers IA", status: "Escalando", latencia: "89ms" },
+];
+
+const auditoria = [
+  "21/03/2026 08:30 - Rotação de token API concluída.",
+  "20/03/2026 18:05 - Atualização de regras de webhook WhatsApp.",
+  "20/03/2026 09:11 - Backup incremental validado com sucesso.",
+];
 
 export default function ConfiguracoesIntegracoesAdmin() {
-  // Simulação de integrações
-  const [chatwoot, setChatwoot] = useState("Ativa");
-  const [n8n, setN8n] = useState("Ativa");
-  const [assas, setAssas] = useState("Ativa");
-  const [workers, setWorkers] = useState("Ativos");
-  const [seguranca, setSeguranca] = useState("OK");
-  const [auditoria, setAuditoria] = useState(["Login admin 15/03/2026", "Configuração n8n atualizada"]);
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-700 dark:text-gray-300 mb-8">Configurações e Integrações Admin</h1>
-        {/* Setup de integrações */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Integrações</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-              <p className="font-bold">Chatwoot:</p>
-              <p>{chatwoot}</p>
-            </div>
-            <div className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-              <p className="font-bold">n8n:</p>
-              <p>{n8n}</p>
-            </div>
-            <div className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-              <p className="font-bold">Assas:</p>
-              <p>{assas}</p>
-            </div>
-            <div className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-              <p className="font-bold">Workers:</p>
-              <p>{workers}</p>
-            </div>
+    <div className="space-y-6">
+      <section className="rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm">
+        <h1 className="text-3xl font-black text-zinc-900">Configurações e Integrações</h1>
+        <p className="mt-2 text-zinc-600">
+          Governança técnica da operação: conectores, segurança e observabilidade da plataforma.
+        </p>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        {integracoes.map((item) => (
+          <article key={item.nome} className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <p className="text-sm text-zinc-500">{item.nome}</p>
+            <p className="mt-1 text-xl font-black text-zinc-900">{item.status}</p>
+            <p className="mt-2 text-sm text-cyan-700">Latência média: {item.latencia}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+        <article className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-zinc-900">Segurança da conta master</h2>
+          <div className="mt-4 space-y-2 text-sm text-zinc-700">
+            <p className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5">
+              MFA administrativo: <span className="font-semibold text-emerald-700">Ativo</span>
+            </p>
+            <p className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5">
+              Criptografia em repouso: <span className="font-semibold text-emerald-700">AES-256</span>
+            </p>
+            <p className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5">
+              Monitoramento anti-fraude: <span className="font-semibold text-emerald-700">Ativo 24h</span>
+            </p>
           </div>
-        </section>
-        {/* Segurança */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Segurança</h2>
-          <div className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-            <p>Status: <span className="font-bold">{seguranca}</span></p>
-          </div>
-        </section>
-        {/* Auditoria */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Auditoria</h2>
-          <ul className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-            {auditoria.map((a, idx) => <li key={idx}>{a}</li>)}
+        </article>
+
+        <article className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-zinc-900">Auditoria recente</h2>
+          <ul className="mt-4 space-y-2 text-sm text-zinc-700">
+            {auditoria.map((evento) => (
+              <li key={evento} className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5">
+                {evento}
+              </li>
+            ))}
           </ul>
-        </section>
-      </div>
+        </article>
+      </section>
     </div>
   );
 }
-
-// Estilos básicos para inputs
-// Adicione ao seu CSS global:
-// .input { border-radius: 0.5rem; border: 1px solid #d1d5db; padding: 0.5rem; background: #fff; color: #222; }
-// .input:focus { outline: none; border-color: #6b7280; background: #f3f4f6; }

@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { getClientes, getConversasCliente, criarConversa } from "@/lib/api";
 
@@ -58,7 +59,7 @@ export default function Mensagens() {
             }))
           );
         } else {
-          setMensagens(MOCK_MENSAGENS.filter(m => m.cliente_id === Number(clienteSelecionado.id)));
+          setMensagens(MOCK_MENSAGENS.filter((m) => m.cliente_id === Number(clienteSelecionado.id)));
         }
       } catch (e) {
         console.error("Falha ao buscar conversas", e);
@@ -99,22 +100,27 @@ export default function Mensagens() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-8">
-      <div className="max-w-5xl mx-auto bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-8 border border-emerald-100 dark:border-zinc-800 flex flex-col gap-6">
-        <h1 className="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-2">Central de Mensagens</h1>
+    <div className="mx-auto w-full max-w-6xl space-y-6">
+      <section className="rounded-3xl border border-emerald-100 bg-white p-7 shadow-sm">
+        <h1 className="text-3xl font-black text-zinc-900">Central de Mensagens</h1>
+        <p className="mt-2 text-zinc-600">
+          Atendimento em tempo real com histórico unificado entre nutricionista, secretária e cliente.
+        </p>
+      </section>
 
+      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         <label className="block">
-          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">Selecionar cliente</span>
+          <span className="text-sm font-medium text-zinc-600">Selecionar cliente</span>
           <select
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2"
+            className="mt-1 block w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm md:max-w-md"
             value={clienteSelecionado?.id || ""}
-            onChange={e => {
+            onChange={(e) => {
               const id = e.target.value;
-              setClienteSelecionado(clientes.find(c => c.id === id) || null);
+              setClienteSelecionado(clientes.find((c) => c.id === id) || null);
             }}
           >
             <option value="">-- escolha um cliente --</option>
-            {clientes.map(c => (
+            {clientes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome} ({c.status})
               </option>
@@ -122,12 +128,16 @@ export default function Mensagens() {
           </select>
         </label>
 
-        <div className="flex flex-col gap-2 h-80 overflow-y-auto bg-zinc-50 dark:bg-zinc-800 rounded p-4 border border-zinc-100 dark:border-zinc-800">
-          {mensagens.map(msg => (
+        <div className="mt-4 flex h-96 flex-col gap-2 overflow-y-auto rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+          {mensagens.map((msg) => (
             <div key={msg.id} className={`flex ${msg.autor === "nutricionista" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-xs px-4 py-2 rounded-lg shadow text-sm ${msg.autor === "nutricionista" ? "bg-emerald-500 text-white" : "bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-100"}`}>
+              <div
+                className={`max-w-xs rounded-lg px-4 py-2 text-sm shadow ${
+                  msg.autor === "nutricionista" ? "bg-emerald-500 text-white" : "bg-white text-zinc-800"
+                }`}
+              >
                 <div>{msg.conteudo}</div>
-                <div className="text-xs text-zinc-300 mt-1">{new Date(msg.data).toLocaleTimeString()}</div>
+                <div className="mt-1 text-xs text-zinc-300">{new Date(msg.data).toLocaleTimeString()}</div>
               </div>
             </div>
           ))}
@@ -135,20 +145,22 @@ export default function Mensagens() {
           {mensagens.length === 0 && <div className="text-center text-zinc-500">Nenhuma conversa encontrada.</div>}
         </div>
 
-        <div className="flex gap-2 mt-2">
+        <div className="mt-3 flex gap-2">
           <input
             type="text"
             placeholder="Digite uma mensagem..."
-            className="flex-1 rounded px-4 py-2 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800"
+            className="flex-1 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm"
             value={novaMensagem}
-            onChange={e => setNovaMensagem(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleEnviar()}
+            onChange={(e) => setNovaMensagem(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleEnviar()}
           />
-          <button onClick={handleEnviar} className="rounded-full bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 font-semibold shadow transition-colors">Enviar</button>
+          <button onClick={handleEnviar} className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600">
+            Enviar
+          </button>
         </div>
 
-        {erro && <div className="text-red-600 text-sm">{erro}</div>}
-      </div>
+        {erro && <div className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{erro}</div>}
+      </section>
     </div>
   );
 }

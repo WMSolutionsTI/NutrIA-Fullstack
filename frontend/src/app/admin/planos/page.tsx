@@ -3,68 +3,119 @@
 import React, { useState } from "react";
 
 export default function GestaoPlanos() {
-  // Simulação de dados
   const [planos, setPlanos] = useState([
-    { nome: "NutrIA Pro Basic", preco: 99, descricao: "Plano básico para nutricionistas iniciantes", ativo: true },
-    { nome: "NutrIA Pro Premium", preco: 199, descricao: "Plano avançado com IA, automações e integrações", ativo: true },
+    { nome: "NutrIA Pro Basic", preco: 99, descricao: "Base operacional para profissionais em crescimento", ativo: true },
+    { nome: "NutrIA Pro Premium", preco: 199, descricao: "Suite completa com IA, automações e performance comercial", ativo: true },
   ]);
   const [novoNome, setNovoNome] = useState("");
   const [novoPreco, setNovoPreco] = useState("");
   const [novaDescricao, setNovaDescricao] = useState("");
 
   const adicionarPlano = () => {
-    if (novoNome && novoPreco && novaDescricao) {
-      setPlanos([...planos, { nome: novoNome, preco: parseFloat(novoPreco), descricao: novaDescricao, ativo: true }]);
-      setNovoNome("");
-      setNovoPreco("");
-      setNovaDescricao("");
-    }
+    if (!novoNome || !novoPreco || !novaDescricao) return;
+    setPlanos((prev) => [
+      ...prev,
+      {
+        nome: novoNome,
+        preco: Number(novoPreco),
+        descricao: novaDescricao,
+        ativo: true,
+      },
+    ]);
+    setNovoNome("");
+    setNovoPreco("");
+    setNovaDescricao("");
   };
 
   const alternarStatus = (idx: number) => {
-    setPlanos(planos.map((p, i) => i === idx ? { ...p, ativo: !p.ativo } : p));
+    setPlanos((prev) => prev.map((p, i) => (i === idx ? { ...p, ativo: !p.ativo } : p)));
   };
 
-  // Simulação de vendas automatizadas por IA
-  const vendasIA = 32;
-  const conversao = 18;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-yellow-700 dark:text-yellow-300 mb-8">Gestão de Planos e Assinaturas</h1>
-        {/* Cadastro */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Cadastrar Plano</h2>
-          <div className="flex gap-4">
-            <input value={novoNome} onChange={e => setNovoNome(e.target.value)} placeholder="Nome do plano" className="input" />
-            <input value={novoPreco} onChange={e => setNovoPreco(e.target.value)} placeholder="Preço (R$)" className="input" type="number" />
-            <input value={novaDescricao} onChange={e => setNovaDescricao(e.target.value)} placeholder="Descrição" className="input" />
-            <button onClick={adicionarPlano} className="rounded bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 font-semibold shadow">Adicionar</button>
-          </div>
-        </section>
-        {/* Tabela de planos */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Lista de Planos</h2>
-          <table className="w-full bg-white dark:bg-zinc-900 rounded shadow">
-            <thead>
-              <tr>
-                <th className="py-2 px-4">Nome</th>
-                <th className="py-2 px-4">Preço</th>
-                <th className="py-2 px-4">Descrição</th>
-                <th className="py-2 px-4">Status</th>
-                <th className="py-2 px-4">Ações</th>
+    <div className="space-y-6">
+      <section className="rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm">
+        <h1 className="text-3xl font-black text-zinc-900">Planos e Assinaturas</h1>
+        <p className="mt-2 text-zinc-600">
+          Gestão de oferta comercial, precificação e estratégias de monetização.
+        </p>
+      </section>
+
+      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="text-xl font-bold text-zinc-900">Novo plano</h2>
+        <div className="mt-4 grid gap-3 md:grid-cols-[1fr_180px_1fr_auto]">
+          <input
+            value={novoNome}
+            onChange={(e) => setNovoNome(e.target.value)}
+            placeholder="Nome do plano"
+            className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          />
+          <input
+            value={novoPreco}
+            onChange={(e) => setNovoPreco(e.target.value)}
+            placeholder="Preço"
+            type="number"
+            className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          />
+          <input
+            value={novaDescricao}
+            onChange={(e) => setNovaDescricao(e.target.value)}
+            placeholder="Descrição comercial"
+            className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          />
+          <button
+            onClick={adicionarPlano}
+            className="rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white px-4 py-2.5 text-sm font-semibold"
+          >
+            Adicionar
+          </button>
+        </div>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-3">
+        <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-zinc-500">Planos ativos</p>
+          <p className="text-3xl font-black text-zinc-900">{planos.filter((p) => p.ativo).length}</p>
+        </article>
+        <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-zinc-500">Ticket médio estimado</p>
+          <p className="text-3xl font-black text-zinc-900">
+            R$ {planos.length ? Math.round(planos.reduce((acc, p) => acc + p.preco, 0) / planos.length) : 0}
+          </p>
+        </article>
+        <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-zinc-500">Motor de vendas IA</p>
+          <p className="mt-1 text-sm font-semibold text-emerald-700">Ativo e integrado ao fluxo comercial</p>
+        </article>
+      </section>
+
+      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-zinc-200">
+          <table className="min-w-full text-left">
+            <thead className="bg-zinc-100">
+              <tr className="text-sm text-zinc-700">
+                <th className="px-4 py-3">Plano</th>
+                <th className="px-4 py-3">Preço</th>
+                <th className="px-4 py-3">Descrição</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Ações</th>
               </tr>
             </thead>
             <tbody>
               {planos.map((p, idx) => (
-                <tr key={idx}>
-                  <td className="py-2 px-4">{p.nome}</td>
-                  <td className="py-2 px-4">R$ {p.preco}</td>
-                  <td className="py-2 px-4">{p.descricao}</td>
-                  <td className="py-2 px-4">{p.ativo ? "Ativo" : "Inativo"}</td>
-                  <td className="py-2 px-4">
-                    <button onClick={() => alternarStatus(idx)} className="rounded bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 font-semibold shadow">
+                <tr key={`${p.nome}-${idx}`} className="border-t border-zinc-200 text-sm text-zinc-700">
+                  <td className="px-4 py-3 font-semibold text-zinc-900">{p.nome}</td>
+                  <td className="px-4 py-3">R$ {p.preco}</td>
+                  <td className="px-4 py-3">{p.descricao}</td>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${p.ativo ? "bg-emerald-100 text-emerald-700" : "bg-zinc-200 text-zinc-700"}`}>
+                      {p.ativo ? "Ativo" : "Inativo"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => alternarStatus(idx)}
+                      className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold hover:bg-zinc-50"
+                    >
                       {p.ativo ? "Desativar" : "Ativar"}
                     </button>
                   </td>
@@ -72,22 +123,8 @@ export default function GestaoPlanos() {
               ))}
             </tbody>
           </table>
-        </section>
-        {/* Vendas automatizadas por IA e métricas */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Vendas Automatizadas por IA</h2>
-          <div className="bg-white dark:bg-zinc-900 rounded p-4 shadow">
-            <p>Vendas realizadas por agentes IA: <span className="font-bold">{vendasIA}</span></p>
-            <p>Taxa de conversão: <span className="font-bold">{conversao}%</span></p>
-            <p>Integração Assas: <span className="font-bold">Ativa</span></p>
-          </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
-
-// Estilos básicos para inputs
-// Adicione ao seu CSS global:
-// .input { border-radius: 0.5rem; border: 1px solid #d1d5db; padding: 0.5rem; background: #fff; color: #222; }
-// .input:focus { outline: none; border-color: #f59e42; background: #fff7ed; }

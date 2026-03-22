@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { getCliente, atualizarCliente, ativarCliente, getConversasCliente } from "@/lib/api";
@@ -51,59 +52,65 @@ export default function ClienteDetalhe({ params }: { params: { id: string } }) {
   };
 
   if (!cliente) {
-    return <div className="p-8">Carregando cliente...</div>;
+    return <div className="p-8 text-sm text-zinc-600">Carregando cliente...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-100 via-white to-blue-100 dark:from-zinc-900 dark:via-black dark:to-zinc-800 px-4 py-8">
-      <div className="max-w-4xl mx-auto bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-8 border border-emerald-100 dark:border-zinc-800">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-4">{cliente.nome || `Cliente #${clienteId}`}</h1>
-          <Link className="rounded bg-blue-500 hover:bg-blue-600 text-white px-4 py-2" href={`/nutricionista/clientes/${clienteId}/upload`}>
+    <div className="mx-auto w-full max-w-6xl space-y-6">
+      <section className="rounded-3xl border border-emerald-100 bg-white p-7 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-black text-zinc-900">{cliente.nome || `Cliente #${clienteId}`}</h1>
+            <p className="mt-2 text-zinc-600">Ficha completa de atendimento, status comercial e histórico de conversas.</p>
+          </div>
+          <Link className="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700" href={`/nutricionista/clientes/${clienteId}/upload`}>
             Upload de arquivo
           </Link>
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <p className="text-zinc-700 dark:text-zinc-200"><strong>E-mail:</strong> {cliente.email}</p>
-            <p className="text-zinc-700 dark:text-zinc-200"><strong>Telefone:</strong> {cliente.telefone}</p>
-            <p className="text-zinc-700 dark:text-zinc-200"><strong>Status:</strong> {cliente.status}</p>
-            <p className="text-zinc-700 dark:text-zinc-200"><strong>Nutricionista ID:</strong> {cliente.nutricionista_id}</p>
+      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
+            <p><strong>E-mail:</strong> {cliente.email}</p>
+            <p><strong>Telefone:</strong> {cliente.telefone}</p>
+            <p><strong>Status:</strong> {cliente.status}</p>
+            <p><strong>Nutricionista ID:</strong> {cliente.nutricionista_id}</p>
           </div>
-          <div>
-            <p className="text-zinc-700 dark:text-zinc-200"><strong>Cadastro:</strong> {cliente.created_at || "Não disponível"}</p>
-            <p className="text-zinc-700 dark:text-zinc-200"><strong>Observações:</strong> {cliente.historico || "Nenhuma"}</p>
+          <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
+            <p><strong>Cadastro:</strong> {cliente.created_at || "Não disponível"}</p>
+            <p><strong>Observações:</strong> {cliente.historico || "Nenhuma"}</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-4">
-          {["cliente_potencial", "cliente_ativo", "cliente_inativo", "cliente_satisfeito", "nutri", "em_atendimento_direto"].map(status => (
+        <div className="mt-5 flex flex-wrap gap-2">
+          {["cliente_potencial", "cliente_ativo", "cliente_inativo", "cliente_satisfeito", "nutri", "em_atendimento_direto"].map((status) => (
             <button
               key={status}
               onClick={() => atualizarStatus(status)}
-              className="rounded bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 text-sm"
+              className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600"
             >
               {status}
             </button>
           ))}
         </div>
 
-        {erro && <div className="mb-2 text-sm text-red-600">{erro}</div>}
-        {sucesso && <div className="mb-2 text-sm text-green-600">{sucesso}</div>}
+        {erro && <div className="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{erro}</div>}
+        {sucesso && <div className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">{sucesso}</div>}
+      </section>
 
-        <div className="mb-4">
-          <h2 className="text-2xl font-semibold text-emerald-700 dark:text-emerald-300">Conversas</h2>
-          {conversas.length === 0 && <p>Nenhuma conversa encontrada.</p>}
+      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h2 className="text-2xl font-bold text-zinc-900">Conversas</h2>
+          {conversas.length === 0 && <p className="mt-2 text-sm text-zinc-500">Nenhuma conversa encontrada.</p>}
           {conversas.length > 0 && (
             <ul className="space-y-2 mt-2">
-              {conversas.map(conv => (
-                <li key={conv.id} className="border p-3 rounded bg-zinc-50 dark:bg-zinc-800">
+              {conversas.map((conv) => (
+                <li key={conv.id} className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
                   <div className="text-sm text-zinc-500">{new Date(conv.data || Date.now()).toLocaleString()}</div>
-                  <div className="text-md">{conv.mensagem}</div>
-                  <div className="text-xs text-zinc-400 mt-1">Modo: {conv.modo || "ia"}</div>
+                  <div className="text-sm text-zinc-800">{conv.mensagem}</div>
+                  <div className="mt-1 text-xs text-zinc-500">Modo: {conv.modo || "ia"}</div>
                   <div className="mt-2">
-                    <Link href={`/nutricionista/clientes/${clienteId}/conversas/${conv.id}`} className="text-blue-600 hover:underline text-sm">
+                    <Link href={`/nutricionista/clientes/${clienteId}/conversas/${conv.id}`} className="text-sm font-semibold text-cyan-700 hover:text-cyan-800">
                       Abrir conversa no painel de atendimento
                     </Link>
                   </div>
@@ -111,9 +118,7 @@ export default function ClienteDetalhe({ params }: { params: { id: string } }) {
               ))}
             </ul>
           )}
-        </div>
-      </div>
+      </section>
     </div>
   );
 }
-
