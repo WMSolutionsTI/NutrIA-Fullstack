@@ -16,3 +16,7 @@ class Arquivo(Base):
     cliente = relationship("Cliente")
     conversa_id = Column(Integer, ForeignKey("conversas.id"), nullable=True)
     conversa = relationship("Conversa")
+    ocr_texto = Column(String, nullable=True)
+    ocr_status = Column(String, nullable=True)
+    ocr_engine = Column(String, nullable=True)
+    ocr_extraido_em = Column(DateTime, nullable=True)

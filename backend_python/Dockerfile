@@ -36,6 +36,8 @@ WORKDIR /app
 # Instala apenas o necessário para runtime (curl para healthcheck)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    tesseract-ocr \
+    tesseract-ocr-por \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia dependências instaladas do builder

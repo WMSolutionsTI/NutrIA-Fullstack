@@ -32,6 +32,9 @@ bcrypt==5.0.0
 
 # Upload de arquivos
 python-multipart==0.0.22
+Pillow==11.1.0
+pytesseract==0.3.13
+pypdf==5.3.1
 
 # Cliente HTTP (para integrar Chatwoot, n8n, Evolution API)
 httpx==0.28.1

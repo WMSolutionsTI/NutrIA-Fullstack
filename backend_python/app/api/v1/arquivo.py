@@ -10,10 +10,12 @@ from app.api.v1.auth import get_current_user
 from app.db import get_db
 from app.domain.models.arquivo import Arquivo
 from app.domain.models.arquivo_dispatch import ArquivoDispatch
+from app.domain.models.avanco import Avanco
 from app.domain.models.cliente import Cliente
 from app.domain.models.nutricionista import Nutricionista
 from app.services.ai_service import gerar_resposta_agente
 from app.services.event_bus import build_event_payload, publish_event
+from app.services.ocr_service import extract_text_from_file
 from app.services.worker_job_service import create_worker_job
 from app.workers.chatwoot_attachment_worker import enviar_arquivo_chatwoot
 from app.workers.minio_worker import download_object, upload_object
@@ -21,6 +23,51 @@ from app.workers.minio_worker import download_object, upload_object
 router = APIRouter()
 
 ALLOWED_FILE_TYPES = {"documento", "imagem", "audio", "video"}
+
+
+def _registrar_avanco_ocr(
+    db: Session, *, arquivo: Arquivo, current_user: Nutricionista, ocr_texto: str
+) -> None:
+    if not arquivo.cliente_id or not ocr_texto:
+        return
+    db.add(
+        Avanco(
+            cliente_id=arquivo.cliente_id,
+            nutricionista_id=current_user.id,
+            data=datetime.utcnow(),
+            descricao=f"[OCR_ARQUIVO] {arquivo.nome}\n{ocr_texto[:2000]}",
+            status="concluido",
+        )
+    )
+    db.commit()
+
+
+def _processar_ocr_arquivo(
+    db: Session,
+    *,
+    arquivo: Arquivo,
+    local_path: str,
+    current_user: Nutricionista,
+    registrar_avanco: bool = True,
+) -> dict:
+    result = extract_text_from_file(local_path, filename=arquivo.nome)
+    arquivo.ocr_status = result.status
+    arquivo.ocr_engine = result.engine
+    arquivo.ocr_texto = result.text[:8000] if result.text else None
+    arquivo.ocr_extraido_em = datetime.utcnow()
+    db.add(arquivo)
+    db.commit()
+    db.refresh(arquivo)
+
+    if registrar_avanco and result.status == "ok" and result.text:
+        _registrar_avanco_ocr(db, arquivo=arquivo, current_user=current_user, ocr_texto=result.text)
+
+    return {
+        "ocr_status": result.status,
+        "ocr_engine": result.engine,
+        "ocr_detail": result.detail,
+        "ocr_texto_preview": (result.text or "")[:500],
+    }
 
 
 @router.post("/arquivos/upload")
@@ -34,6 +81,7 @@ def upload_arquivo(
     caixa_id: int | None = Form(default=None),
     account_id: str | None = Form(default=None),
     conversation_id: str | None = Form(default=None),
+    executar_ocr: bool = Form(default=True),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: Nutricionista = Depends(get_current_user),
@@ -74,6 +122,21 @@ def upload_arquivo(
     db.add(arquivo)
     db.commit()
     db.refresh(arquivo)
+
+    ocr_payload = {
+        "ocr_status": "ignored",
+        "ocr_engine": None,
+        "ocr_detail": "OCR não aplicável para este tipo de arquivo.",
+        "ocr_texto_preview": "",
+    }
+    if executar_ocr and tipo_norm in {"documento", "imagem"}:
+        ocr_payload = _processar_ocr_arquivo(
+            db,
+            arquivo=arquivo,
+            local_path=local_path,
+            current_user=current_user,
+            registrar_avanco=True,
+        )
 
     os.remove(local_path)
 
@@ -126,6 +189,7 @@ def upload_arquivo(
         "dispatch_id": dispatch.id if dispatch else None,
         "dispatch_status": dispatch.status if dispatch else None,
         "descricao": descricao,
+        **ocr_payload,
     }
 
 
@@ -239,3 +303,37 @@ def download_arquivo(
     if current_user.papel != "admin" and arquivo.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=403, detail="Acesso negado")
     return {"caminho_s3": arquivo.caminho_s3}
+
+
+@router.post("/arquivos/{arquivo_id}/ocr")
+def executar_ocr_arquivo(
+    arquivo_id: int,
+    registrar_no_prontuario: bool = True,
+    db: Session = Depends(get_db),
+    current_user: Nutricionista = Depends(get_current_user),
+):
+    arquivo = db.query(Arquivo).filter(Arquivo.id == arquivo_id).first()
+    if not arquivo:
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+    if current_user.papel != "admin" and arquivo.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
+    local_path = f"/tmp/{uuid.uuid4()}_{arquivo.nome}"
+    if not download_object(arquivo.caminho_s3, local_path):
+        raise HTTPException(status_code=500, detail="Falha ao baixar arquivo do Minio")
+    try:
+        payload = _processar_ocr_arquivo(
+            db,
+            arquivo=arquivo,
+            local_path=local_path,
+            current_user=current_user,
+            registrar_avanco=registrar_no_prontuario,
+        )
+    finally:
+        if os.path.exists(local_path):
+            os.remove(local_path)
+    return {
+        "arquivo_id": arquivo.id,
+        "arquivo_nome": arquivo.nome,
+        **payload,
+    }
