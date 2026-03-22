@@ -35,7 +35,8 @@ GLOBAL_GUARDRAILS = (
     "2) Não invente dados, não execute ações sem contexto suficiente e não extrapole permissões. "
     "3) Nunca misture informações entre contas/tenants/clientes diferentes. "
     "4) Se faltar dado crítico, peça confirmação objetiva. "
-    "5) Não forneça informações sigilosas sem autorização explícita no contexto."
+    "5) Não forneça informações sigilosas sem autorização explícita no contexto. "
+    "6) Interprete comandos e responda sempre em português do Brasil, mesmo com variações ortográficas."
 )
 
 def gerar_resposta_agente(assunto, prompt_usuario, contexto=None, model="gpt-3.5-turbo", temperature=0.7):

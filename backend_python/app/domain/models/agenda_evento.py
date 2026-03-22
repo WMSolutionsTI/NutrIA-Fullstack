@@ -16,6 +16,7 @@ class AgendaEvento(Base):
     inicio_em = Column(DateTime, nullable=False)
     fim_em = Column(DateTime, nullable=False)
     status = Column(String, nullable=False, default="agendado")
+    modalidade = Column(String, nullable=True)  # online | presencial
     google_event_id = Column(String, nullable=True)
     origem = Column(String, nullable=False, default="painel")
     criado_em = Column(DateTime, nullable=True)

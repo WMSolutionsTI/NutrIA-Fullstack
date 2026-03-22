@@ -142,3 +142,27 @@ def test_chatwoot_webhook_rejeita_account_sem_mapeamento():
     assert cliente is None
     db.close()
 
+
+def test_chatwoot_webhook_admin_rota_para_admin_ops():
+    db, _, caixa = setup_test_data()
+    admin = db.query(Nutricionista).first()
+    assert admin is not None
+    admin.tipo_user = "admin"
+    db.add(admin)
+    db.commit()
+
+    payload = {
+        "inbox_id": caixa.identificador_chatwoot,
+        "conversation_id": "conv-admin-1",
+        "account_id": "acct123",
+        "sender": {"id": "chatwoot-admin-contact"},
+        "content": "como está o estado do meu servidor e qual o diagnostico do meu cluster",
+    }
+    response = _call_webhook(payload, db)
+    assert response["status"] == "queued_admin_ops"
+
+    job = db.query(WorkerJob).filter(WorkerJob.event_id == response["event_id"]).first()
+    assert job is not None
+    assert job.queue == "queue.admin.ops"
+    assert job.tipo == "admin_ops_chatwoot"
+    db.close()

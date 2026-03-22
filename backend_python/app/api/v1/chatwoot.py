@@ -16,6 +16,7 @@ from app.domain.models.nutri_contact_verification import NutriContactVerificatio
 from app.services.conversation_archive_service import archive_conversa_snapshot
 from app.services.event_bus import build_event_payload, publish_event
 from app.services.worker_job_service import create_worker_job
+from app.utils.text_normalize import normalize_pt_text
 from app.workers.admin_monitor_worker import notificar_admins
 from app.workers.cadastro_assinatura_worker import enviar_email_codigo_validacao_nutri
 from app.workers.chatwoot_message_worker import enviar_mensagem_chatwoot
@@ -25,7 +26,7 @@ from app.workers.quebrar_enviar_mensagens_worker import enviar_mensagens
 def is_request_nutricionista(message: str) -> bool:
     if not message or not isinstance(message, str):
         return False
-    text = message.lower()
+    text = normalize_pt_text(message)
     triggers = [
         "falar com nutricionista",
         "atendimento humano",
@@ -44,7 +45,7 @@ def is_request_nutricionista(message: str) -> bool:
 def is_finalizar_atendimento(message: str) -> bool:
     if not message or not isinstance(message, str):
         return False
-    text = message.lower()
+    text = normalize_pt_text(message)
     triggers = [
         "encerrar atendimento",
         "finalizar atendimento",
@@ -59,18 +60,41 @@ def is_finalizar_atendimento(message: str) -> bool:
     return any(trigger in text for trigger in triggers)
 
 
-def notificar_nutricionista(cliente, nutricionista, conversation_id):
+def notificar_nutricionista(db: Session, cliente, nutricionista, conversation_id):
     link = f"{FRONTEND_URL}/nutricionista/clientes/{cliente.id}/conversas/{conversation_id}"
     mensagem = (
         f"[Escalonamento] Cliente {cliente.nome} (ID {cliente.id}) solicitou falar com nutricionista {nutricionista.nome}. "
         f"Acompanhe aqui: {link}"
     )
-    notificar_admins(mensagem)
-    # Também pode estender para envio de notificação por email/sms quando disponível
+    contato_nutri = (
+        db.query(Cliente)
+        .filter(Cliente.nutricionista_id == nutricionista.id, Cliente.status == "nutri")
+        .order_by(Cliente.id.asc())
+        .first()
+    )
+    if not contato_nutri:
+        return
+    ultima = (
+        db.query(Conversa)
+        .filter(
+            Conversa.cliente_id == contato_nutri.id,
+            Conversa.chatwoot_account_id.isnot(None),
+            Conversa.chatwoot_conversation_id.isnot(None),
+        )
+        .order_by(Conversa.id.desc())
+        .first()
+    )
+    if not ultima:
+        return
+    enviar_mensagens(
+        ultima.chatwoot_account_id,
+        ultima.chatwoot_conversation_id,
+        [mensagem],
+    )
 
 
 def parse_int_from_text(pattern: str, message: str) -> int | None:
-    match = re.search(pattern, message.lower())
+    match = re.search(pattern, normalize_pt_text(message))
     if not match:
         return None
     value = match.group(1)
@@ -87,7 +111,7 @@ def _archive_nova_conversa(
 def is_nutri_identification_phrase(message: str) -> bool:
     if not message or not isinstance(message, str):
         return False
-    text = message.lower()
+    text = normalize_pt_text(message)
     return "sou a nutri" in text and "conta" in text
 
 
@@ -101,7 +125,7 @@ def parse_nutri_confirmation_code(message: str) -> str | None:
 
 
 def _contains_any(message: str, triggers: list[str]) -> bool:
-    text = (message or "").lower()
+    text = normalize_pt_text(message)
     return any(trigger in text for trigger in triggers)
 
 
@@ -169,6 +193,7 @@ async def receber_webhook_chatwoot(request: Request, db: Session = Depends(get_d
     conversation_id = payload.get("conversation_id")
     account_id = str(payload.get("account_id") or "")
     message = payload.get("content") or payload.get("message", "")
+    attachments_count = len(payload.get("attachments") or [])
 
     def parse_chatwoot_contact_id(payload_data):
         # Chatwoot pode enviar sender.id ou contact.id em diferentes eventos
@@ -364,6 +389,36 @@ async def receber_webhook_chatwoot(request: Request, db: Session = Depends(get_d
     db.commit()
     _archive_nova_conversa(caixa, db, nova_conversa, tenant_id_fallback=tenant_id)
 
+    # Conta admin: roteia mensagens para o worker operacional do cluster.
+    if nutri and nutri.papel == "admin":
+        event = build_event_payload(
+            queue_tipo="admin_ops_chatwoot",
+            tenant_id=tenant_id,
+            nutricionista_id=nutri_id,
+            cliente_id=cliente.id,
+            payload={
+                "source": "chatwoot_admin",
+                "account_id": account_id,
+                "inbox_id": inbox_id,
+                "canal": canal_origem,
+                "conversation_id": str(conversation_id) if conversation_id is not None else None,
+                "message": message or "",
+                "conversa_id": nova_conversa.id,
+            },
+        )
+        publish_event("queue.admin.ops", event)
+        create_worker_job(
+            db,
+            event_id=event["event_id"],
+            queue="queue.admin.ops",
+            tipo="admin_ops_chatwoot",
+            tenant_id=tenant_id,
+            nutricionista_id=nutri_id,
+            cliente_id=cliente.id,
+            payload=event,
+        )
+        return {"status": "queued_admin_ops", "cliente_id": cliente.id, "event_id": event["event_id"]}
+
     total_interacoes = (
         db.query(Conversa)
         .filter(Conversa.cliente_id == cliente.id)
@@ -386,6 +441,7 @@ async def receber_webhook_chatwoot(request: Request, db: Session = Depends(get_d
             "canal": canal_origem,
             "conversation_id": str(conversation_id) if conversation_id is not None else None,
             "message": message,
+            "attachments_count": attachments_count,
             "cliente_status": cliente.status,
             "retry_count": 0,
             "conversa_id": nova_conversa.id,

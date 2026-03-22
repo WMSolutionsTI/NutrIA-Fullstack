@@ -55,6 +55,7 @@ def init_db() -> None:
     # Garantir importação de todos os models para registro no metadata
     from app.domain.models import (
         agenda_evento,
+        anamnese_workflow,
         admin_request,
         arquivo,
         arquivo_dispatch,
@@ -75,6 +76,7 @@ def init_db() -> None:
         plano_alimentar,
         prompt,
         relatorio,
+        saas_signup_request,
         tenant,
         voice_call,
         worker_job,
@@ -86,6 +88,11 @@ def init_db() -> None:
     _ensure_column("conversas", "chatwoot_inbox_id", "chatwoot_inbox_id VARCHAR")
     _ensure_column("conversas", "canal_origem", "canal_origem VARCHAR")
     _ensure_column("conversas", "chatwoot_conversation_id", "chatwoot_conversation_id VARCHAR")
+    _ensure_column("agenda_eventos", "modalidade", "modalidade VARCHAR")
+    _ensure_column("arquivos", "ocr_texto", "ocr_texto VARCHAR")
+    _ensure_column("arquivos", "ocr_status", "ocr_status VARCHAR")
+    _ensure_column("arquivos", "ocr_engine", "ocr_engine VARCHAR")
+    _ensure_column("arquivos", "ocr_extraido_em", "ocr_extraido_em DATETIME")
     _run_lightweight_backfill()
 
 

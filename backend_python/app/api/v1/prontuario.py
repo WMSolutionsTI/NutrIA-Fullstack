@@ -9,6 +9,8 @@ from app.domain.models.pagamento import Pagamento
 from app.domain.models.objetivo import Objetivo
 from app.domain.models.avanco import Avanco
 from app.db import get_db
+from app.services.event_bus import build_event_payload, publish_event
+from app.services.worker_job_service import create_worker_job
 
 router = APIRouter()
 
@@ -61,10 +63,38 @@ def criar_plano(cliente_id: int, plano: dict, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    if not cliente.nutricionista_id or not cliente.nutricionista:
+        raise HTTPException(status_code=400, detail="Cliente sem nutricionista vinculado")
+    tenant_id = int(cliente.nutricionista.tenant_id)
+    nutri_id = int(cliente.nutricionista_id)
     novo = PlanoAlimentar(cliente_id=cliente_id, nutricionista_id=cliente.nutricionista_id or 0, **plano)
     db.add(novo)
     db.commit()
     db.refresh(novo)
+    event = build_event_payload(
+        queue_tipo="meal_followup_tick",
+        tenant_id=tenant_id,
+        nutricionista_id=nutri_id,
+        cliente_id=cliente_id,
+        payload={
+            "tipo": "meal_followup_tick",
+            "cliente_id": cliente_id,
+            "nutricionista_id": nutri_id,
+            "tenant_id": tenant_id,
+            "trigger": "plano_created",
+        },
+    )
+    publish_event("queue.notifications", event)
+    create_worker_job(
+        db,
+        event_id=event["event_id"],
+        queue="queue.notifications",
+        tipo="meal_followup_tick",
+        tenant_id=tenant_id,
+        nutricionista_id=nutri_id,
+        cliente_id=cliente_id,
+        payload=event,
+    )
     return novo
 
 

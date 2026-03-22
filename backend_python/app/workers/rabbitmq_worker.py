@@ -5,6 +5,7 @@ import pika
 
 from app.workers.arquivo_dispatch_worker import process_arquivo_dispatch
 from app.workers.atendimento_workflow_worker import process_atendimento_workflow
+from app.workers.meal_support_worker import process_notification_event
 from app.workers.quebrar_enviar_mensagens_worker import enviar_mensagens
 from app.workers.specialist_task_worker import process_specialist_task
 from app.workers.worker_admin_ops import process_admin_ops
@@ -91,6 +92,10 @@ def process_message(queue, body):
         account_id = data.get("account_id")
         message = data.get("message")
         enviar_mensagens(account_id, conversation_id, [f"Processado: {message}"])
+        return
+
+    if queue == "queue.notifications":
+        process_notification_event(data)
         return
 
     if queue == "queue.agenda.sync":
