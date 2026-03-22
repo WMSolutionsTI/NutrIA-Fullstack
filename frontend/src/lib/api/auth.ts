@@ -64,8 +64,40 @@ export interface TrialSignupRequest {
   telefone: string
 }
 
+export interface AssinaturaCheckoutRequest {
+  nome: string
+  email: string
+  plano_nome: string
+  valor: number
+  documento?: string
+  telefone?: string
+  billing_type?: 'PIX' | 'BOLETO' | 'CREDIT_CARD'
+}
+
 export function solicitarTrial(data: TrialSignupRequest): Promise<{ message: string }> {
   return apiClient.post('/api/v1/onboarding/trial/solicitar', data, { public: true })
+}
+
+export function solicitarCheckoutAssinatura(data: AssinaturaCheckoutRequest): Promise<{
+  status: string
+  pagamento_id: string
+  payment_link?: string
+  pix_qrcode?: string
+}> {
+  return apiClient.post('/api/v1/onboarding/assinatura/checkout', data, { public: true })
+}
+
+export function obterStatusAssinatura(pagamentoId: string): Promise<{
+  pagamento_id: string
+  payment_status: string
+  provisioned: boolean
+  nutricionista_id?: number
+  tenant_id?: number
+  chatwoot_account?: string
+  email: string
+  plano_nome: string
+}> {
+  return apiClient.get(`/api/v1/onboarding/assinatura/status/${pagamentoId}`, { public: true })
 }
 
 export function trocarSenhaPrimeiroAcesso(data: {
@@ -90,6 +122,7 @@ export function salvarConfiguracaoInicial(data: {
   publico_alvo: string
   periodo_trabalho: string
   disponibilidade_agenda: string
+  duracao_consulta_minutos: number
   preco_consulta: string
   pacotes_atendimento: string
   metodo_atendimento: string
@@ -104,4 +137,20 @@ export function salvarConfiguracaoInicial(data: {
   primeira_inbox_configurada: boolean
 }): Promise<{ status: string; setup_completed: boolean }> {
   return apiClient.patch('/api/v1/onboarding/configuracao-inicial', data)
+}
+
+export function configurarIntegracaoAsaas(data: {
+  api_key: string
+  api_url?: string
+  webhook_token?: string
+  wallet_id?: string
+}): Promise<{
+  status: string
+  escopo: string
+  api_url: string
+  wallet_id: string
+  token: string
+  enabled: boolean
+}> {
+  return apiClient.put('/api/v1/onboarding/integracoes/asaas', data)
 }
