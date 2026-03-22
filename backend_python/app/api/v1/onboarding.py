@@ -11,7 +11,15 @@ from app.db import get_db
 from app.domain.models.chatwoot_account import ChatwootAccount
 from app.domain.models.nutricionista import Nutricionista
 from app.domain.models.plano import Plano
+from app.domain.models.saas_signup_request import SaasSignupRequest
 from app.domain.models.tenant import Tenant
+from app.services.asaas_service import (
+    create_customer,
+    create_payment,
+    is_configured,
+    load_asaas_config_from_user,
+    save_asaas_config_to_user,
+)
 from app.workers.cadastro_assinatura_worker import (
     enviar_email_boas_vindas_assinatura,
     gerar_senha_temporaria,
@@ -28,6 +36,16 @@ class ConfirmarAssinaturaRequest(BaseModel):
     plano_nome: str
     documento: str | None = None
     telefone: str | None = None
+
+
+class SolicitarAssinaturaCheckoutRequest(BaseModel):
+    nome: str = Field(min_length=2)
+    email: str
+    plano_nome: str
+    valor: float = Field(gt=0)
+    documento: str | None = None
+    telefone: str | None = None
+    billing_type: str = "PIX"
 
 
 class SolicitarTrialRequest(BaseModel):
@@ -49,6 +67,7 @@ class ConfiguracaoSecretariaRequest(BaseModel):
     publico_alvo: str = Field(min_length=3)
     periodo_trabalho: str = Field(min_length=3)
     disponibilidade_agenda: str = Field(min_length=3)
+    duracao_consulta_minutos: int = Field(ge=10, le=240)
     preco_consulta: str = Field(min_length=1)
     pacotes_atendimento: str = Field(min_length=10)
     metodo_atendimento: str = Field(min_length=3)
@@ -61,6 +80,13 @@ class ConfiguracaoSecretariaRequest(BaseModel):
     google_agenda_configurada: bool = False
     asaas_configurada: bool = False
     primeira_inbox_configurada: bool = False
+
+
+class AsaasConfigRequest(BaseModel):
+    api_key: str = Field(min_length=8)
+    api_url: str | None = None
+    webhook_token: str | None = None
+    wallet_id: str | None = None
 
 
 def _load_metadata(nutri: Nutricionista) -> dict:
@@ -89,6 +115,15 @@ def _resolver_limite_inboxes(db: Session, plano_nome: str) -> int:
         return int(plano.limite_caixas)
     limites_padrao = {"basic": 1, "pro": 5, "enterprise": 20}
     return limites_padrao.get(plano_nome.lower(), 1)
+
+
+def _get_admin_user(db: Session) -> Nutricionista | None:
+    return (
+        db.query(Nutricionista)
+        .filter(Nutricionista.tipo_user == "admin", Nutricionista.status == "active")
+        .order_by(Nutricionista.id.asc())
+        .first()
+    )
 
 
 def _provisionar_nutri(
@@ -158,26 +193,55 @@ def confirmar_assinatura(
     data: ConfirmarAssinaturaRequest,
     db: Session = Depends(get_db),
 ):
-    existente = db.query(Nutricionista).filter(Nutricionista.email == data.email).first()
+    signup = (
+        db.query(SaasSignupRequest)
+        .filter(SaasSignupRequest.asaas_payment_id == data.pagamento_id)
+        .order_by(SaasSignupRequest.id.desc())
+        .first()
+    )
+    if not signup:
+        raise HTTPException(status_code=404, detail="Solicitação de assinatura não encontrada")
+    if (signup.email or "").lower() != data.email.lower():
+        raise HTTPException(status_code=400, detail="E-mail não confere com a cobrança")
+    if signup.payment_status != "pago":
+        return {"status": "aguardando_pagamento", "pagamento_id": data.pagamento_id}
+
+    if signup.provisioned_nutricionista_id:
+        return {
+            "status": "assinatura_confirmada",
+            "tenant_id": signup.provisioned_tenant_id,
+            "nutricionista_id": signup.provisioned_nutricionista_id,
+            "chatwoot_account": signup.provisioned_chatwoot_account,
+        }
+
+    existente = db.query(Nutricionista).filter(Nutricionista.email == signup.email).first()
     if existente:
         raise HTTPException(status_code=400, detail="E-mail já possui assinatura ativa")
 
     tenant, nutricionista, conta_chatwoot, senha_temporaria = _provisionar_nutri(
         db=db,
-        nome=data.nome,
-        email=data.email,
-        plano_nome=data.plano_nome,
+        nome=signup.nome,
+        email=signup.email,
+        plano_nome=signup.plano_nome,
         auditoria_tag=f"assinatura_confirmada:{data.pagamento_id}",
-        telefone=data.telefone,
+        telefone=signup.telefone,
     )
 
-    email = enviar_email_boas_vindas_assinatura(
-        email=nutricionista.email,
-        nome=nutricionista.nome,
+    email_data = enviar_email_boas_vindas_assinatura(
+        email=signup.email,
+        nome=signup.nome,
         senha_temporaria=senha_temporaria,
-        plano=nutricionista.plano,
+        plano=signup.plano_nome,
         limite_inboxes=conta_chatwoot.limite_inboxes_base + conta_chatwoot.inboxes_extra,
     )
+
+    signup.provisioned_tenant_id = tenant.id
+    signup.provisioned_nutricionista_id = nutricionista.id
+    signup.provisioned_chatwoot_account = conta_chatwoot.chatwoot_account_id
+    signup.provisioned_em = datetime.now(UTC)
+    signup.atualizado_em = datetime.now(UTC)
+    db.add(signup)
+    db.commit()
 
     return {
         "status": "assinatura_confirmada",
@@ -187,8 +251,100 @@ def confirmar_assinatura(
         "chatwoot_instance": conta_chatwoot.chatwoot_instance,
         "limite_inboxes": conta_chatwoot.limite_inboxes_base + conta_chatwoot.inboxes_extra,
         "email_enviado": True,
-        "email_assunto": email["assunto"],
+        "email_assunto": email_data["assunto"],
         "proximo_passo": "Acessar o painel e solicitar integrações das inboxes desejadas.",
+    }
+
+
+@router.post("/assinatura/checkout", response_model=dict)
+def solicitar_checkout_assinatura(
+    data: SolicitarAssinaturaCheckoutRequest,
+    db: Session = Depends(get_db),
+):
+    if db.query(Nutricionista).filter(Nutricionista.email == data.email).first():
+        raise HTTPException(status_code=400, detail="E-mail já possui assinatura ativa")
+    admin = _get_admin_user(db)
+    if not admin:
+        raise HTTPException(status_code=400, detail="Conta admin não configurada")
+    admin_asaas = load_asaas_config_from_user(admin)
+    if not is_configured(admin_asaas):
+        raise HTTPException(status_code=400, detail="Asaas do admin não configurado")
+
+    billing_type = data.billing_type.upper().strip()
+    if billing_type not in {"PIX", "BOLETO", "CREDIT_CARD"}:
+        raise HTTPException(status_code=400, detail="billing_type inválido. Use PIX, BOLETO ou CREDIT_CARD.")
+
+    customer = create_customer(
+        nome=data.nome,
+        email=data.email,
+        cpf_cnpj=data.documento,
+        mobile_phone=data.telefone,
+        external_reference=f"saas_signup:{data.email.lower()}",
+        config=admin_asaas,
+    )
+    customer_id = str(customer.get("id") or "").strip()
+    if not customer_id:
+        raise HTTPException(status_code=502, detail="Falha ao criar cliente no Asaas")
+
+    payment = create_payment(
+        customer_id=customer_id,
+        value=float(data.valor),
+        billing_type=billing_type,
+        description=f"Assinatura NutrIA-Pro - plano {data.plano_nome}",
+        external_reference=f"saas_signup:{data.email.lower()}:{datetime.now(UTC).timestamp()}",
+        config=admin_asaas,
+    )
+    payment_id = str(payment.get("id") or "").strip()
+    if not payment_id:
+        raise HTTPException(status_code=502, detail="Falha ao criar cobrança no Asaas")
+
+    signup = SaasSignupRequest(
+        nome=data.nome.strip(),
+        email=data.email.strip().lower(),
+        telefone=(data.telefone or "").strip() or None,
+        plano_nome=data.plano_nome.strip().lower(),
+        documento=(data.documento or "").strip() or None,
+        asaas_payment_id=payment_id,
+        asaas_customer_id=customer_id,
+        payment_status="pendente",
+        valor=str(data.valor),
+        criado_em=datetime.now(UTC),
+        atualizado_em=datetime.now(UTC),
+    )
+    db.add(signup)
+    db.commit()
+    db.refresh(signup)
+
+    return {
+        "status": "checkout_criado",
+        "pagamento_id": payment_id,
+        "payment_link": payment.get("invoiceUrl") or payment.get("bankSlipUrl") or payment.get("transactionReceiptUrl"),
+        "pix_qrcode": payment.get("pixQrCode"),
+    }
+
+
+@router.get("/assinatura/status/{pagamento_id}", response_model=dict)
+def status_assinatura(
+    pagamento_id: str,
+    db: Session = Depends(get_db),
+):
+    signup = (
+        db.query(SaasSignupRequest)
+        .filter(SaasSignupRequest.asaas_payment_id == pagamento_id)
+        .order_by(SaasSignupRequest.id.desc())
+        .first()
+    )
+    if not signup:
+        raise HTTPException(status_code=404, detail="Assinatura não encontrada")
+    return {
+        "pagamento_id": signup.asaas_payment_id,
+        "payment_status": signup.payment_status,
+        "provisioned": bool(signup.provisioned_nutricionista_id),
+        "nutricionista_id": signup.provisioned_nutricionista_id,
+        "tenant_id": signup.provisioned_tenant_id,
+        "chatwoot_account": signup.provisioned_chatwoot_account,
+        "email": signup.email,
+        "plano_nome": signup.plano_nome,
     }
 
 
@@ -276,3 +432,48 @@ def salvar_configuracao_inicial(
     db.commit()
     db.refresh(current_user)
     return {"status": "configuracao_concluida", "setup_completed": True}
+
+
+@router.put("/integracoes/asaas", response_model=dict)
+def configurar_integracao_asaas(
+    data: AsaasConfigRequest,
+    current_user: Nutricionista = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    save_asaas_config_to_user(
+        current_user,
+        api_key=data.api_key,
+        api_url=data.api_url,
+        webhook_token=data.webhook_token,
+        wallet_id=data.wallet_id,
+    )
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+    cfg = load_asaas_config_from_user(current_user)
+    masked = f"{cfg['api_key'][:4]}***{cfg['api_key'][-4:]}" if cfg.get("api_key") and len(cfg["api_key"]) >= 8 else "configurada"
+    return {
+        "status": "asaas_configurada",
+        "escopo": "admin" if current_user.papel == "admin" else "nutricionista",
+        "api_url": cfg.get("api_url"),
+        "wallet_id": cfg.get("wallet_id"),
+        "token": masked,
+        "enabled": is_configured(cfg),
+    }
+
+
+@router.get("/integracoes/asaas", response_model=dict)
+def status_integracao_asaas(
+    current_user: Nutricionista = Depends(get_current_user),
+):
+    cfg = load_asaas_config_from_user(current_user)
+    key = str(cfg.get("api_key") or "")
+    masked = f"{key[:4]}***{key[-4:]}" if len(key) >= 8 else ("configurada" if key else "não configurada")
+    return {
+        "configured": is_configured(cfg),
+        "escopo": "admin" if current_user.papel == "admin" else "nutricionista",
+        "api_url": cfg.get("api_url") or "",
+        "wallet_id": cfg.get("wallet_id") or "",
+        "token": masked,
+        "webhook_token_configured": bool(cfg.get("webhook_token")),
+    }

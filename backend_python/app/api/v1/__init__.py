@@ -22,6 +22,7 @@ from app.api.v1.monitor import router as monitor_router
 from app.api.v1.n8n import router as n8n_router
 from app.api.v1.nutricionista import router as nutricionista_router
 from app.api.v1.onboarding import router as onboarding_router
+from app.api.v1.pagamentos import router as pagamentos_router
 from app.api.v1.plano import router as plano_router
 from app.api.v1.plano_alimentar import router as plano_alimentar_router
 from app.api.v1.prompt import router as prompt_router
@@ -57,6 +58,7 @@ router.include_router(monitor_router)
 router.include_router(n8n_router)
 router.include_router(nutricionista_router)
 router.include_router(onboarding_router)
+router.include_router(pagamentos_router)
 router.include_router(plano_router)
 router.include_router(plano_alimentar_router)
 router.include_router(prompt_router)

@@ -10,6 +10,7 @@ from app.db import get_db
 from app.domain.models.nutricionista import Nutricionista
 from app.domain.models.worker_job import WorkerJob
 from app.services.event_bus import build_event_payload, publish_event
+from app.utils.text_normalize import normalize_pt_text
 from app.workers.admin_monitor_worker import coletar_metricas, notificar_admins
 from app.workers.rabbitmq_worker import QUEUES, get_queue_depth
 
@@ -55,11 +56,11 @@ def comando_ops(
 ):
     _ensure_admin(current_user)
 
-    comando = data.comando.strip().lower()
-    if comando == "status_filas":
+    comando = normalize_pt_text(data.comando)
+    if comando in {"status_filas", "estado_filas", "estado das filas", "status das filas", "filas"}:
         return estado_ops(db, current_user)
 
-    if comando == "reprocessar_job":
+    if comando in {"reprocessar_job", "reprocessar", "reprocessar job", "reanalisar job"}:
         if not data.event_id:
             raise HTTPException(status_code=400, detail="event_id é obrigatório para reprocessamento")
         job = db.query(WorkerJob).filter(WorkerJob.event_id == data.event_id).first()
